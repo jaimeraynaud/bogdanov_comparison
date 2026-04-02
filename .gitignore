@@ -1,0 +1,65 @@
+# Data files
+*.dat
+*.csv
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Keep Python files but ignore data directories
+Bogdanov_testcase2_data/*
+!Bogdanov_testcase2_data/*.py
+fortran_input_files/*
+!fortran_input_files/*.py
+images/*
+!images/*.py
+
+
