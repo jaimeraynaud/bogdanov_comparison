@@ -6,6 +6,11 @@ from pathlib import Path
 from matplotlib.colors import LogNorm
 from scipy.interpolate import interp1d
 
+# Get the project root directory (parent of compare_results)
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / 'Bogdanov_testcase2_data'
+RESULTS_DIR = PROJECT_ROOT / 'compare_results'
+
 def dat_to_csv(dat_path, csv_path=None, delimiter=None, header=False):
     '''
     Convert a .dat text table to CSV and return the output CSV path.
@@ -31,13 +36,13 @@ def dat_to_csv(dat_path, csv_path=None, delimiter=None, header=False):
     df.to_csv(csv_path, index=False, header=header)
     return str(csv_path)
 
-realisation = pd.read_csv('Bogdanov_testcase2_data/two_spot_synthetic_expected.dat', sep=' ',header=None)
+realisation = pd.read_csv(DATA_DIR / 'two_spot_synthetic_expected.dat', sep=' ',header=None)
 # spot1 = pd.read_csv('compare_results/phasemap_spot1_counts_v2.csv')
 # spot2 = pd.read_csv('compare_results/phasemap_spot2_counts_v2.csv')
-spot1 = pd.read_csv(dat_to_csv('compare_results/spot1_test_data_counts_pi.dat', 'compare_results/spot1_test_data_counts.csv'), header=None)
-spot2 = pd.read_csv(dat_to_csv('compare_results/spot2_test_data_counts.dat', 'compare_results/spot2_test_data_counts.csv'), header=None)
+spot1 = pd.read_csv(dat_to_csv(RESULTS_DIR / 'spot1_test_data_counts.dat', RESULTS_DIR / 'spot1_test_data_counts.csv'), header=None)
+spot2 = pd.read_csv(dat_to_csv(RESULTS_DIR / 'spot2_test_data_counts.dat', RESULTS_DIR / 'spot2_test_data_counts.csv'), header=None)
 both_spots=spot1+spot2
-background = pd.read_csv('compare_results/background_testcase2_1e6counts_25_299.dat', sep=' ',header=None)
+background = pd.read_csv(RESULTS_DIR / 'background_testcase2_1e6counts_25_299.dat', sep=' ',header=None)
 # absorption= pd.read_csv('/Users/wfwallac/Downloads/two_spot_synthetic_NICER_data/tbabs/tbnew0.02.txt', sep=' ',header=None)
 
 ''' 
