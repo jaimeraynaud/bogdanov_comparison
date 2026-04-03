@@ -8,8 +8,7 @@ from scipy.interpolate import interp1d
 
 # Get the project root directory (parent of compare_results)
 PROJECT_ROOT = Path(__file__).parent.parent
-DATA_DIR = PROJECT_ROOT / 'Bogdanov_testcase2_data'
-RESULTS_DIR = PROJECT_ROOT / 'compare_results'
+COMPARE_DIR = PROJECT_ROOT / 'compare_results'
 
 def dat_to_csv(dat_path, csv_path=None, delimiter=None, header=False):
     '''
@@ -36,13 +35,18 @@ def dat_to_csv(dat_path, csv_path=None, delimiter=None, header=False):
     df.to_csv(csv_path, index=False, header=header)
     return str(csv_path)
 
-realisation = pd.read_csv(DATA_DIR / 'two_spot_synthetic_expected.dat', sep=' ',header=None)
-# spot1 = pd.read_csv('compare_results/phasemap_spot1_counts_v2.csv')
-# spot2 = pd.read_csv('compare_results/phasemap_spot2_counts_v2.csv')
-spot1 = pd.read_csv(dat_to_csv(RESULTS_DIR / 'spot1_test_data_counts.dat', RESULTS_DIR / 'spot1_test_data_counts.csv'), header=None)
-spot2 = pd.read_csv(dat_to_csv(RESULTS_DIR / 'spot2_test_data_counts.dat', RESULTS_DIR / 'spot2_test_data_counts.csv'), header=None)
+expected = pd.read_csv(COMPARE_DIR / 'two_spot_synthetic_expected.dat', sep=' ',header=None)
+realisation = pd.read_csv(COMPARE_DIR / 'two_spot_synthetic_realisation.dat', sep=' ',header=None)
+
+spot1_wendy = pd.read_csv(COMPARE_DIR/'phasemap_spot1_counts_v2.csv')
+spot2_wendy = pd.read_csv(COMPARE_DIR/'phasemap_spot2_counts_v2.csv')
+both_spots_wendy = spot1_wendy+spot2_wendy
+
+spot1 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'spot1_test_data_counts.dat', COMPARE_DIR / 'spot1_test_data_counts.csv'), header=None)
+spot2 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'spot2_test_data_counts.dat', COMPARE_DIR / 'spot2_test_data_counts.csv'), header=None)
 both_spots=spot1+spot2
-background = pd.read_csv(RESULTS_DIR / 'background_testcase2_1e6counts_25_299.dat', sep=' ',header=None)
+
+background = pd.read_csv(COMPARE_DIR / 'background_testcase2_1e6counts_25_299.dat', sep=' ',header=None)
 # absorption= pd.read_csv('/Users/wfwallac/Downloads/two_spot_synthetic_NICER_data/tbabs/tbnew0.02.txt', sep=' ',header=None)
 
 ''' 
@@ -90,6 +94,7 @@ You don't need this, it should be taken care of in the main code but I just leav
 for i in range(32):
 #     both_spots[i,:] = both_spots[i,:] + background[0]/32
     both_spots.iloc[i] = np.sum((both_spots.iloc[i], background[0] / 32), axis=0)
+    both_spots_wendy.iloc[i] = np.sum((both_spots_wendy.iloc[i], background[0] / 32), axis=0)
 #     phase_map.iloc[i] = np.sum((phase_map.iloc[i], background_counts / 32), axis=0)
 
 #shift and define bins for energy-phase maps
@@ -97,23 +102,36 @@ phase_bins = np.linspace(0.0, 1-1/32, 32)
 energy_bins = np.linspace(26, 300, 275)
 test_data=np.array(realisation[2]).reshape(275,32)
 both_spots=np.array(both_spots)
+both_spots_wendy=np.array(both_spots_wendy)
 shifted_phase= np.concat((both_spots[10:,:275],both_spots[:10,:275]),axis=0) #18 for 300rs, [7/8,:700] for 600rs
+shifted_phase_wendy = np.concat((both_spots_wendy[10:,:275],both_spots_wendy[:10,:275]),axis=0) #18 for 300rs, [7/8,:700] for 600rs
 rel_diff=(test_data-shifted_phase.T)/test_data
+rel_diff_wendy=(test_data-shifted_phase_wendy.T)/test_data
 
 ### Plot your results
 plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase.T, cmap='magma', shading='nearest')
 plt.xlabel('phase')
 plt.ylabel('energy channel')
+plt.title('Fortran Code Phase Map')
 plt.colorbar(plot)
 # plt.plot(phase_bins, demo.sum(axis=1))
 plt.show()
 
-### Plot model data
-# plot=plt.pcolormesh(phase_bins,energy_bins,test_data,cmap='magma',shading='nearest',norm=LogNorm())
-# plt.xlabel('phase')
-# plt.ylabel('energy channel')
-# plt.colorbar(plot)
-# plt.show()
+plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase_wendy.T, cmap='magma', shading='nearest')
+plt.xlabel('phase')
+plt.ylabel('energy channel')
+plt.title('Wendys Phase Map')
+plt.colorbar(plot)
+# plt.plot(phase_bins, demo.sum(axis=1))
+plt.show()
+
+## Plot model data
+plot=plt.pcolormesh(phase_bins,energy_bins,test_data,cmap='magma',shading='nearest',norm=LogNorm())
+plt.xlabel('phase')
+plt.ylabel('energy channel')
+plt.title('Model Phase Map')
+plt.colorbar(plot)
+plt.show()
 
 ### Plot relative difference between the two data outputs
 # plot=plt.pcolormesh(phase_bins,energy_bins,rel_diff,cmap='coolwarm',shading='nearest',vmin=-0.1,vmax=0.1)
@@ -127,6 +145,16 @@ summed_vals=shifted_phase.sum(axis=1)
 summed_vals2=test_data.sum(axis=0)
 plt.plot(phase_bins,summed_vals,label='our method')
 plt.plot(phase_bins,summed_vals2,label='expected testcase')
+plt.title('Fortran Code Bolometric LC')
+plt.legend()
+plt.show()
+
+### Plot bolometric lightcurve (or switch sum axes and change to energy_bins for comparison of E distrib)
+summed_vals_wendy=shifted_phase_wendy.sum(axis=1)
+summed_vals2=test_data.sum(axis=0)
+plt.plot(phase_bins,summed_vals_wendy,label='Wendy method')
+plt.plot(phase_bins,summed_vals2,label='expected testcase')
+plt.title('Wendy Bolometric LC')
 plt.legend()
 plt.show()
 
