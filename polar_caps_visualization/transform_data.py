@@ -13,14 +13,20 @@ from pathlib import Path
 
 def transform_hotspot_data(input_file, output_file):
     """
-    Transform hotspot grid data to spherical coordinates with discretization.
+    Transform hotspot grid data to spherical coordinates.
+    
+    Maps 2000x2000 grid directly to (phi, theta) coordinates:
+    - Grid indices [i, j] correspond to 2000x2000 data points
+    - phi = i * (2π / 1999) for i = 0 to 1999
+    - cos(theta) = -1 + j * (2 / 1999) for j = 0 to 1999
+    - theta = arccos(cos_theta)
     
     Parameters
     ----------
     input_file : str
         Path to input .dat file containing 2000x2000 grid of 0s and 1s
     output_file : str
-        Path to output file with 2 columns: phi and theta (both discretized)
+        Path to output file with 2 columns: phi and theta (both in radians)
     
     Returns
     -------
@@ -35,49 +41,30 @@ def transform_hotspot_data(input_file, output_file):
     if data.shape != (2000, 2000):
         print(f"Warning: Expected shape (2000, 2000), got {data.shape}")
     
-    n_theta, n_phi = data.shape
-    n_steps = 2000  # Number of discretization steps
+    n_phi = 1999  # Number of steps in phi direction
+    n_theta = 1999  # Number of steps in theta direction
     
-    # Create discretization bins
-    # Phi: 0 to 2*pi in 2000 steps
-    phi_bins = np.linspace(0, 2 * np.pi, n_steps + 1)
-    phi_centers = (phi_bins[:-1] + phi_bins[1:]) / 2
-    
-    # cos(theta): -1 to 1 in 2000 steps
-    cos_theta_bins = np.linspace(-1, 1, n_steps + 1)
-    cos_theta_centers = (cos_theta_bins[:-1] + cos_theta_bins[1:]) / 2
+    # Step sizes
+    dph = 2.0 * np.pi / n_phi
+    dcth = 2.0 / n_theta
     
     phi_values = []
     theta_values = []
     
-    for i_theta in range(n_theta):
-        for i_phi in range(n_phi):
+    # Iterate through grid: data[i, j] where i is phi index, j is cos(theta) index
+    for i in range(data.shape[0]):  # phi dimension
+        for j in range(data.shape[1]):  # cos(theta) dimension
             # Check if this is a hotspot point
-            # if data[i_theta, i_phi] == 1:
-            if data[i_phi,i_theta] == 1:
-                # Compute continuous spherical coordinates
-                # phi goes from 0 to 2*pi
-                phi = (i_phi / n_phi) * 2 * np.pi
+            if data[i, j] == 1:
+                # Map indices to spherical coordinates
+                phi = i * dph
+                cos_theta = -1.0 + j * dcth
                 
-                # theta goes from 0 to pi
-                theta = (i_theta / n_theta) * np.pi
-                cos_theta = np.cos(theta)
+                # Convert cos(theta) to theta
+                theta = np.arccos(np.clip(cos_theta, -1.0, 1.0))
                 
-                # Discretize phi: find which bin it belongs to
-                phi_bin = np.searchsorted(phi_bins, phi, side='right') - 1
-                phi_bin = np.clip(phi_bin, 0, n_steps - 1)
-                phi_discrete = phi_centers[phi_bin]
-                
-                # Discretize cos(theta): find which bin it belongs to
-                cos_theta_bin = np.searchsorted(cos_theta_bins, cos_theta, side='right') - 1
-                cos_theta_bin = np.clip(cos_theta_bin, 0, n_steps - 1)
-                cos_theta_discrete = cos_theta_centers[cos_theta_bin]
-                
-                # Convert discrete cos(theta) back to theta
-                theta_discrete = np.arccos(cos_theta_discrete)
-                
-                phi_values.append(phi_discrete)
-                theta_values.append(theta_discrete)
+                phi_values.append(phi)
+                theta_values.append(theta)
     
     # Stack and save
     output_data = np.column_stack((phi_values, theta_values))
@@ -217,25 +204,24 @@ def rotate_spherical_coordinates(theta, phi, theta_rot):
     return theta_new, phi_new
 
 
-def generate_paper_hotspots(grid_resolution=2000, output_dir=None):
+def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
     """
-    Generate hotspot coordinates based on the paper's reference parameters.
+    Generate hotspot grid directly from paper reference parameters.
     
-    This function creates a spherical grid and checks each point to determine
-    if it falls within the defined circular hotspot regions from the paper.
-    Uses the paper's hotspot parameters directly without observer frame transformation.
+    Creates a 2000x2000 grid where 1 represents hotspot points and 0 represents non-hotspot points,
+    based on the paper's hotspot parameters (center and radius).
     
     Parameters
     ----------
     grid_resolution : int
-        Resolution of the spherical grid (number of points along each dimension)
+        Grid resolution (default: 2000x2000)
     output_dir : str or Path, optional
         Output directory for the generated files. If None, uses current directory.
     
     Returns
     -------
-    dict
-        Dictionary with spot names as keys, containing {'theta_c', 'phi_c', 'radius'} for each
+    None
+        Saves grid files to disk
     """
     if output_dir is None:
         output_dir = Path(__file__).parent
@@ -247,109 +233,71 @@ def generate_paper_hotspots(grid_resolution=2000, output_dir=None):
         {
             'name': 'spot1',
             'theta_c': 0.6283,      # colatitude θc1 in radians
-            'phi_c': 0.0,           # azimuth φ1 in radians
+            # 'phi_c': 0.0,  # azimuth φ1 in radians
+            # 'phi_c': 0.2,  # azimuth φ1 in radians
+            'phi_c': 0.827731,  # Wendy's azimuth φ1 in radians
             'radius': 0.01,         # angular radius Δθ1 in radians
         },
         {
             'name': 'spot2',
             'theta_c': 2.077,       # colatitude θc2 in radians
-            'phi_c': 3.5343,        # azimuth φ2 in radians
+            # 'phi_c': 3.5343,        # azimuth φ2 in radians
+            # 'phi_c': 3.7343,  # azimuth φ2 in radians
+            # 'phi_c': 2.74889,  # azimuth φ2 in radians
+            'phi_c': 3.577958, # Wendy's azimuth φ2 in radians
             'radius': 0.33,         # angular radius Δθ2 in radians
         }
     ]
     
-    # Generate spherical grid
     print("=" * 60)
-    print("PAPER REFERENCE HOTSPOTS GENERATION (JAIME)")
+    print("PAPER REFERENCE HOTSPOTS GRID GENERATION (JAIME)")
     print("=" * 60)
-    print(f"\nGenerating {grid_resolution}x{grid_resolution} spherical grid...")
+    print(f"\nGenerating {grid_resolution}x{grid_resolution} grids from paper parameters...\n")
     
-    # Create discretization for phi and theta
-    phi_edges = np.linspace(0, 2 * np.pi, grid_resolution + 1)
-    theta_edges = np.linspace(0, np.pi, grid_resolution + 1)
-    
-    # Create grid of cell centers
-    phi_centers = (phi_edges[:-1] + phi_edges[1:]) / 2
-    theta_centers = (theta_edges[:-1] + theta_edges[1:]) / 2
-    
-    paper_params = {}
+    # Step sizes (matching transform_hotspot_data)
+    n_phi = 1999
+    n_theta = 1999
+    dph = 2.0 * np.pi / n_phi
+    dcth = 2.0 / n_theta
     
     # Process each spot
     for spot in spots:
-        print(f"\nProcessing {spot['name']}...")
+        print(f"Processing {spot['name']}...")
         print(f"  Center: θc = {spot['theta_c']:.4f} rad, φc = {spot['phi_c']:.4f} rad")
         print(f"  Radius: {spot['radius']:.4f} rad")
         
-        phi_points = []
-        theta_points = []
+        # Initialize grid
+        grid = np.zeros((grid_resolution, grid_resolution), dtype=float)
         
-        # Check each grid point
         point_count = 0
-        for theta in theta_centers:
-            for phi in phi_centers:
+        
+        # Iterate through grid and check if each point is within the hotspot
+        for i in range(grid_resolution):
+            for j in range(grid_resolution):
+                # Map grid indices to spherical coordinates
+                phi = i * dph
+                cos_theta = -1.0 + j * dcth
+                theta = np.arccos(np.clip(cos_theta, -1.0, 1.0))
+                
                 # Calculate angular distance from this point to the spot center
                 distance = angular_distance_on_sphere(theta, phi, spot['theta_c'], spot['phi_c'])
                 
                 # Include point if it's within the spot radius
                 if distance <= spot['radius']:
-                    phi_points.append(phi)
-                    theta_points.append(theta)
+                    grid[i, j] = 1.0
                     point_count += 1
         
-        # Calculate center and radius from the generated points
-        if point_count > 0:
-            # Convert to Cartesian to compute center
-            x_vals = np.sin(theta_points) * np.cos(phi_points)
-            y_vals = np.sin(theta_points) * np.sin(phi_points)
-            z_vals = np.cos(theta_points)
-            
-            # Compute mean Cartesian coordinates
-            x_mean = np.mean(x_vals)
-            y_mean = np.mean(y_vals)
-            z_mean = np.mean(z_vals)
-            
-            # Normalize to unit sphere
-            norm = np.sqrt(x_mean**2 + y_mean**2 + z_mean**2)
-            if norm > 0:
-                x_mean /= norm
-                y_mean /= norm
-                z_mean /= norm
-            
-            # Convert back to spherical coordinates
-            theta_center_calc = np.arccos(np.clip(z_mean, -1.0, 1.0))
-            phi_center_calc = np.arctan2(y_mean, x_mean)
-            
-            # Wrap phi to [0, 2π]
-            if phi_center_calc < 0:
-                phi_center_calc += 2 * np.pi
-            
-            # Calculate angular radius
-            distances = []
-            for phi, theta in zip(phi_points, theta_points):
-                dist = angular_distance_on_sphere(theta, phi, theta_center_calc, phi_center_calc)
-                distances.append(dist)
-            
-            angular_radius_calc = np.mean(distances)
-            
-            paper_params[spot['name']] = {
-                'theta_c': theta_center_calc,
-                'phi_c': phi_center_calc,
-                'radius': angular_radius_calc
-            }
+        # Save grid to file
+        output_file = output_dir / f"test_case2_{spot['name']}_shift_highres2k_jaime.dat"
         
-        # Save to file with JAIME naming
-        output_data = np.column_stack((phi_points, theta_points))
-        output_file = output_dir / f"{spot['name']}_spherical_coordinates_jaime.dat"
-        
-        print(f"  Found {point_count} grid points within the spot")
+        coverage = (point_count / (grid_resolution ** 2)) * 100
+        print(f"  Found {point_count} hotspot points ({coverage:.2f}% coverage)")
         print(f"  Writing to {output_file.name}...")
-        np.savetxt(str(output_file), output_data, fmt='%.18e', delimiter=' ')
+        np.savetxt(str(output_file), grid, fmt='%.18e', delimiter=' ')
         
     print("\n" + "=" * 60)
-    print("Paper reference hotspots generation complete!")
+    print("Paper grid generation complete!")
     print("=" * 60)
-    
-    return paper_params
 
 
 def spherical_to_grid(input_file, output_file, grid_resolution=2000):
@@ -527,36 +475,39 @@ def main():
     print("Model data transformation complete!")
     print("=" * 60)
     
-    # Generate paper reference hotspots (JAIME)
+    # Generate paper reference hotspots grid (JAIME) - directly from paper parameters
     print("\n")
-    paper_params = generate_paper_hotspots(grid_resolution=2000, output_dir=base_path)
+    generate_paper_hotspots_grid(grid_resolution=2000, output_dir=base_path)
     
-    # Convert Jaime's spherical coordinates back to grid format
+    # Transform Jaime's grid files to spherical coordinates
     print("\n")
     print("=" * 60)
-    print("CONVERTING JAIME SPHERICAL COORDINATES TO GRID FORMAT")
+    print("TRANSFORMING JAIME GRID TO SPHERICAL COORDINATES")
     print("=" * 60)
     print()
     
-    jaime_spot1_spherical = base_path / "spot1_spherical_coordinates_jaime.dat"
     jaime_spot1_grid = base_path / "test_case2_spot1_shift_highres2k_jaime.dat"
+    jaime_spot1_spherical = base_path / "spot1_spherical_coordinates_jaime.dat"
     
-    jaime_spot2_spherical = base_path / "spot2_spherical_coordinates_jaime.dat"
     jaime_spot2_grid = base_path / "test_case2_spot2_shift_highres2k_jaime.dat"
+    jaime_spot2_spherical = base_path / "spot2_spherical_coordinates_jaime.dat"
     
-    print("Processing Spot 1 (Jaime)...")
-    spherical_to_grid(str(jaime_spot1_spherical), str(jaime_spot1_grid))
+    print("Processing Spot 1 (Jaime - Grid to Spherical)...")
+    paper_params_1 = transform_hotspot_data(str(jaime_spot1_grid), str(jaime_spot1_spherical))
+    print()
     
-    print("Processing Spot 2 (Jaime)...")
-    spherical_to_grid(str(jaime_spot2_spherical), str(jaime_spot2_grid))
+    print("Processing Spot 2 (Jaime - Grid to Spherical)...")
+    paper_params_2 = transform_hotspot_data(str(jaime_spot2_grid), str(jaime_spot2_spherical))
     
+    print()
     print("=" * 60)
-    print("Grid file conversion complete!")
+    print("Jaime grid transformation complete!")
     print("=" * 60)
     
     # Run comparison test
     print("\n")
     model_params_list = [model_params_1, model_params_2]
+    paper_params = {'spot1': paper_params_1, 'spot2': paper_params_2}
     test_hotspot_parameters(model_params_list, paper_params)
 
 

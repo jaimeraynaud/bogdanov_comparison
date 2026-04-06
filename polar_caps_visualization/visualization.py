@@ -24,7 +24,13 @@ def convert_phi_theta_3columns(data):
 
 
 def convert_phi_theta(data):
-    phi = data[:, 0] - np.pi
+    # Convert phi from [0, 2π] to [-π, π]
+    # phi = 0 stays at center (0)
+    # phi = π stays at π (right side)
+    # phi in (π, 2π] wraps to negative values
+    phi = data[:, 0].copy()
+    phi = np.where(phi > np.pi, phi - 2*np.pi, phi)
+    
     theta = np.pi/2.0 - data[:, 1]
     return phi, theta
 
@@ -68,18 +74,18 @@ def plot_best_fits(directory_name, pointSize=0.5):
     
     # Paper reference files
     paper_filenames = [
-        "spot1_spherical_coordinates_jaime.dat", 
+        "spot1_spherical_coordinates_jaime.dat",
         "spot2_spherical_coordinates_jaime.dat"
     ]
 
-    # Labels and colors for model data
-    model_labels = ['Spot 1 (Model)', 'Spot 2 (Model)']
-    model_colors = ["#E69F00", "#009E73"]  # orange and bluish green
+    # Labels and colors for model data (Wendy's)
+    model_labels = ["Wendy's Spot 1", "Wendy's Spot 2"]
+    model_colors = ["#FF8C00", "#FFB347"]  # dark orange and light orange
     model_alphas = [1.0, 1.0]
     
-    # Labels and colors for paper reference data
-    paper_labels = ['Spot 1 (Paper)', 'Spot 2 (Paper)']
-    paper_colors = ["#FF1493", "#00CED1"]  # deep pink and dark turquoise
+    # Labels and colors for paper reference data (Jaime's)
+    paper_labels = ["Jaime's Spot 1", "Jaime's Spot 2"]
+    paper_colors = ["#1E90FF", "#00CED1"]  # dodger blue and dark turquoise
     paper_alphas = [1.0, 1.0]
 
     fig, ax = setup_mollweide_figure()
