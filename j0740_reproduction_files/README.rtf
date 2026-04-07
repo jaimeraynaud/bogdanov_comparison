@@ -1,0 +1,51 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue-Bold;\f1\fnil\fcharset0 HelveticaNeue;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww14600\viewh11960\viewkind0
+\deftab560
+\pard\pardeftab560\partightenfactor0
+
+\f0\b\fs40 \cf0 J0740 reproduction\
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+
+\f1\b0\fs26 \cf0 \
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 For testing and comparison to previous works (i.e. not running the full MCMC), you can stop the program/comment out everything after the first call to static_dipole_quadrupole\
+>>> go to line 144 in the MCMC code : you can comment things out after this or include the loop to see what the phase map looks like with this response function, but technically it is not the same one that was used for the data we are trying to reproduce\
+\
+I manually folded the response function for J0740 so we are going to output the energy-phase map early, but to stop the code complaining you can still feed it \'91responsefunc_testcase2.dat\'92 in line 49 (this is already there no need to change anything). In a similar spirit we will also feed it \'91off_ax_correction25_299.dat\'92 but again this isn\'92t that relevant (still no need to change anything)\
+>>> go to line 104 in grid_setup_mod: uncomment this line as J0740 has no offset correction\
+\
+\
+Since we don\'92t have a field structure for these hotspots yet, you will need to read in a hotspot grid. This code is only set up for single temperature hotspots right now so each of J0740\'92s spots were run separately and the phase maps combined after. I included the hotspots for a resolution grid of 600, but you may need to do some fine tuning of the hotspot positions to get a truly perfect phase match to the data as shifting just the phase bins can only get you so close (just ensure that the relative difference between the two hotspots is constant) - this is why you may see some slicing and concatenating in the python script. Ultimately this will not matter so much as you will not be reading in hotspots for the actual MCMC runs.\
+>>> go to line 719 in the MCMC code : fill in the file path to the hotspot data as well as uncomment the corresponding theta range (line 737 or 738 depending on hotspot)\
+>>> go to line 10 in the MCMC code: set the correct period (1/spin freq)\
+>>> go to line 115 in the Raytracer code: set to the correct spin frequency for J0740\
+>>> go to line 16 in the MCMC code: set the \'91real\'92 channel bounds and number to those you want to work with, set the other channel bounds to a larger range encompassing the real ones\
+>>> go to line 98 in the MCMC code: and make sure you have the right parameters for the given hotspot you are working with (note the parameter and its units in line 95)\
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+\cf0 \
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 We want to output the energy-phase map early, in units of photon counts cm^-2 s^-1 so that we can manually do the response folding\
+>>> go to line 43 in convert_to_counts_mod: uncomment the opening of the file, change the name to something relevant, and uncomment the second loop (from line 51) - this will be the data you want for the manual folding\
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+\cf0 \
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 Do this for each hotspot and covert the fortan output to a readable input for the python script where these files you just generated will be read into spot1 and spot2. I have the script set up where spot 1 and spot 2 are data frames of shape (32,Nchan) (not real_Nchan)\
+\
+\'97\'97\'97\
+\
+*To avoid this manual folding I think you would need to take a look at the response function and remove any rows with duplicate energy bounds - since they are so close it shouldn\'92t matter which is kept and which is removed. The definition of energy bins in the fortran module grid_setup_mod could then use these response function bins in the poparrays routine to define the frequency/energy channels we integrate over, instead of  user specified constant width bins. The values of the response function with the corresponding removed rows can then be stored and read in as effapath. I think this approach would work in general for all response functions, but all of the other examples I have seen were defined with channels of constant width corresponding to either the full or half width of the NICER specs, which is why I initially wrote the code in this way, so not sure if the J0740 response function is a special case or not. \
+\
+\'97\'97\'97\
+Other notes\
+For the MCMC you will need the \'91..obs_data.txt\'92 path in line 466 of the MCMC code. The data I provided is the reformatted version of column 3 as per below. \'91j0740_counts_plus_background.txt\'92 is then column 5 and is Dittman et al. best fit for comparison, not actual NICER data. This is with background included, so you may need to add something in to read in the background values and subtract. The best fit background can be obtained with the python script too.\
+\
+For both J0030 and J0740, I saved the observed energy-phase map from the corresponding phase_channel_model.txt file, but you can also read it in and look at it with the python script included. The file has six columns:\
+1) the channel number\
+2) the rotational phase bin (here using 32 bins)\
+3) the data (observed counts)\
+4) the best-fit model counts\
+5) the best-fit model components from only the NS surface\
+6) the best-fit phase-independent background from}
