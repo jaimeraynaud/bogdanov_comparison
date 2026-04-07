@@ -105,8 +105,10 @@ test_data=np.array(realisation[2]).reshape(275,32)
 both_spots=np.array(both_spots)
 both_spots_wendy=np.array(both_spots_wendy)
 shifted_phase= np.concat((both_spots[8:,:275],both_spots[:8,:275]),axis=0) #18 for 300rs, [7/8,:700] for 600rs
+total_photons = shifted_phase.sum(axis=0).sum(axis=0)
 shifted_phase_wendy = np.concat((both_spots_wendy[8:,:275],both_spots_wendy[:8,:275]),axis=0) #18 for 300rs, [7/8,:700] for 600rs
-rel_diff=(test_data-shifted_phase.T)/test_data
+rel_diff=np.abs((test_data-shifted_phase.T))/test_data
+normalized_absolute_diff = np.abs((test_data-shifted_phase.T))/total_photons
 rel_diff_wendy=(test_data-shifted_phase_wendy.T)/test_data
 
 ### Plot your results
@@ -119,14 +121,14 @@ plt.colorbar(plot)
 plt.savefig(IMG_DIR / 'phase_map_jaime.png')
 plt.show()
 
-plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase_wendy.T, cmap='magma', shading='nearest')
-plt.xlabel('phase')
-plt.ylabel('energy channel')
-plt.title('Wendys Phase Map')
-plt.colorbar(plot)
-# plt.plot(phase_bins, demo.sum(axis=1))
-plt.savefig(IMG_DIR / 'phase_map_wendy.png')
-plt.show()
+# plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase_wendy.T, cmap='magma', shading='nearest')
+# plt.xlabel('phase')
+# plt.ylabel('energy channel')
+# plt.title('Wendys Phase Map')
+# plt.colorbar(plot)
+# # plt.plot(phase_bins, demo.sum(axis=1))
+# plt.savefig(IMG_DIR / 'phase_map_wendy.png')
+# plt.show()
 
 ## Plot model data
 plot=plt.pcolormesh(phase_bins,energy_bins,test_data,cmap='magma',shading='nearest',norm=LogNorm())
@@ -138,11 +140,33 @@ plt.savefig(IMG_DIR / 'phase_map_bogdanov.png')
 plt.show()
 
 ### Plot relative difference between the two data outputs
-# plot=plt.pcolormesh(phase_bins,energy_bins,rel_diff,cmap='coolwarm',shading='nearest',vmin=-0.1,vmax=0.1)
-# plt.xlabel('phase')
-# plt.ylabel('energy channel')
-# plt.colorbar(plot)
-# plt.show()
+plot=plt.pcolormesh(phase_bins,energy_bins,rel_diff,cmap='coolwarm',shading='nearest')
+plt.title('Relative Difference Phase Map')
+plt.xlabel('phase')
+plt.ylabel('energy channel')
+plt.colorbar(plot)
+plt.show()
+
+### Plot absolute difference between the two data outputs
+plot=plt.pcolormesh(phase_bins,energy_bins,normalized_absolute_diff,cmap='coolwarm',shading='nearest')
+plt.title('Normalized Absolute Difference Phase Map')
+plt.xlabel('phase')
+plt.ylabel('energy channel')
+plt.colorbar(plot)
+plt.show()
+
+### Scatter plot of relative difference vs test_data (flattened)
+plt.figure(figsize=(10, 6))
+plt.scatter(test_data.flatten(), rel_diff.flatten(), alpha=0.5, s=10)
+plt.xlabel('Test Data (Observed Counts)')
+plt.ylabel('Relative Difference')
+plt.title('Relative Difference vs Test Data')
+plt.xscale('log')
+plt.yscale('log')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
 phase_bins_ck=(phase_bins+1/64.)%1.0
 print(phase_bins)
 print(phase_bins_ck)
