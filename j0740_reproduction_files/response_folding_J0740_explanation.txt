@@ -1,0 +1,87 @@
+response_folding_J0740.py - Simple Explanation + Line-by-Line Notes
+
+PART 1) SIMPLE EXPLANATION (WHAT THIS SCRIPT IS DOING)
+
+This script compares three versions of J0740 hotspot data:
+1) Wendy's model output,
+2) Jaime's model output,
+3) A provided reference ("expected") phase-channel dataset.
+
+The main idea is:
+- Wendy and Jaime files start as photon-model data.
+- The script manually applies the NICER detector response matrix.
+- After that, both are converted into detector-like counts that can be compared with the expected dataset.
+
+High-level flow:
+- Load NICER response table from a text file.
+- Load spot1 and spot2 for Wendy and Jaime.
+- Add spot1 + spot2 for each method.
+- For each phase bin and model-energy bin, use the response matrix to distribute that model signal into detector channels.
+- Build phase-channel maps for Wendy and Jaime.
+- Shift phase for visual alignment.
+- Compute diagnostics versus expected counts (relative differences).
+- Plot bolometric light curve comparison and save figure.
+
+What "response rows" mean in simple terms:
+- Each response row corresponds to one true-energy interval of incoming photons.
+- That row stores weights for how photons in that energy interval are detected across instrument channels.
+- In other words: one response row is a conversion rule from "true photon energy" to "detected channel distribution".
+
+
+PART 2) LINE-BY-LINE EXPLANATION OF THE RESPONSE-FOLDING CORE
+
+Below, "core" refers to this block:
+- chan_width definition
+- Wendy folding loop
+- Jaime folding loop
+
+A) Setup lines
+
+chan_width = 0.005
+- Defines model energy-bin width used to compute bin-center energies.
+
+map_wendy = np.zeros((32, 94))
+map_jaime = np.zeros((32, 94))
+- Allocate output arrays in detector space.
+- 32 rows = phase bins.
+- 94 columns = selected NICER channels (indices 30..123).
+
+B) Wendy folding loop
+
+for i in range(32):
+- Loop over phase bins.
+
+for j in range(Nchan_wendy):
+- Loop over model energy bins/channels.
+
+val1, val2, i1, i2 = find_bounds(j*chan_width + 0.1 + chan_width/2.0, eminNICER)
+- Compute model bin-center energy for channel j.
+- Find where that energy lands in NICER response energy grid.
+- i1 is the lower response-row index used for lookup.
+
+map_wendy[i, :] = map_wendy[i, :] + both_spots_wendy[i, j] * areaNICER[i1, 30:124] * (1.0/32.0) * 2733.81 * 1000.0
+- Take Wendy flux at phase i and model channel j.
+- Multiply by response row slice areaNICER[i1, 30:124] to distribute flux into detector channels.
+- Multiply by exposure scaling factor:
+  - (1.0/32.0): per-phase fraction of a cycle
+  - 2733.81 and 1000.0: script's hard-coded scale constants
+- Add contribution into the detector-space row map_wendy[i, :].
+
+
+PART 3) WHY THIS LETS YOU COMPARE TO EXPECTED DATA
+
+After folding:
+- Wendy and Jaime are both in detector-like phase-channel count space.
+- The script then phase-shifts maps and compares them to NS_counts.
+- Differences (absolute and relative) are computed to evaluate agreement.
+- Bolometric curves (sum over channels) are plotted for a final visual check.
+
+
+PART 4) IMPORTANT IMPLEMENTATION NOTES
+
+- find_bounds currently checks against eminNICER only and returns i1/i2 indices.
+- In folding, only i1 is used (no interpolation between i1 and i2).
+- startchanNICER is read but not used in the folding expression.
+- Channel slice 30:124 is hard-coded to match target detector channel range.
+- If an energy falls outside the expected bounds, find_bounds returns zeros, which can silently use row 0.
+

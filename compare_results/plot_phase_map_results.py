@@ -41,11 +41,16 @@ realisation = pd.read_csv(COMPARE_DIR / 'two_spot_synthetic_realisation.dat', se
 
 spot1_wendy = pd.read_csv(COMPARE_DIR/'phasemap_spot1_counts_v2.csv')
 spot2_wendy = pd.read_csv(COMPARE_DIR/'phasemap_spot2_counts_v2.csv')
-both_spots_wendy = spot1_wendy+spot2_wendy
 
-spot1 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'spot1_test_data_counts.dat', COMPARE_DIR / 'spot1_test_data_counts.csv'), header=None)
-spot2 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'spot2_test_data_counts.dat', COMPARE_DIR / 'spot2_test_data_counts.csv'), header=None)
-both_spots=spot1+spot2
+
+spot1 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'responsefunc/spot1_test_data_counts.dat', COMPARE_DIR / 'responsefunc/spot1_test_data_counts.csv'), header=None)
+spot2 = pd.read_csv(dat_to_csv(COMPARE_DIR / 'responsefunc/spot2_test_data_counts.dat', COMPARE_DIR / 'responsefunc/spot2_test_data_counts.csv'), header=None)
+
+spot1_new = pd.read_csv(dat_to_csv(COMPARE_DIR / 'reproducing/spot1_test_data_counts.dat', COMPARE_DIR / 'reproducing/spot1_test_data_counts.csv'), header=None)
+spot2_new = pd.read_csv(dat_to_csv(COMPARE_DIR / 'reproducing/spot2_test_data_counts.dat', COMPARE_DIR / 'reproducing/spot2_test_data_counts.csv'), header=None)
+
+both_spots_wendy = spot1
+both_spots = spot1_new
 
 background = pd.read_csv(COMPARE_DIR / 'background_testcase2_1e6counts_25_299.dat', sep=' ',header=None)
 # absorption= pd.read_csv('/Users/wfwallac/Downloads/two_spot_synthetic_NICER_data/tbabs/tbnew0.02.txt', sep=' ',header=None)
@@ -112,14 +117,14 @@ normalized_absolute_diff = np.abs((test_data-shifted_phase.T))/total_photons
 rel_diff_wendy=(test_data-shifted_phase_wendy.T)/test_data
 
 ### Plot your results
-plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase.T, cmap='magma', shading='nearest')
-plt.xlabel('phase')
-plt.ylabel('energy channel')
-plt.title('Jaimes Phase Map (Using fortran code)')
-plt.colorbar(plot)
-# plt.plot(phase_bins, demo.sum(axis=1))
-plt.savefig(IMG_DIR / 'phase_map_jaime.png')
-plt.show()
+# plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase.T, cmap='magma', shading='nearest')
+# plt.xlabel('phase')
+# plt.ylabel('energy channel')
+# plt.title('Jaimes Phase Map (Using fortran code)')
+# plt.colorbar(plot)
+# # plt.plot(phase_bins, demo.sum(axis=1))
+# plt.savefig(IMG_DIR / 'phase_map_jaime.png')
+# plt.show()
 
 # plot = plt.pcolormesh(phase_bins, energy_bins, shifted_phase_wendy.T, cmap='magma', shading='nearest')
 # plt.xlabel('phase')
@@ -130,44 +135,44 @@ plt.show()
 # plt.savefig(IMG_DIR / 'phase_map_wendy.png')
 # plt.show()
 
-## Plot model data
-plot=plt.pcolormesh(phase_bins,energy_bins,test_data,cmap='magma',shading='nearest',norm=LogNorm())
-plt.xlabel('phase')
-plt.ylabel('energy channel')
-plt.title('Bogdanov Phase Map')
-plt.colorbar(plot)
-plt.savefig(IMG_DIR / 'phase_map_bogdanov.png')
-plt.show()
+# ## Plot model data
+# plot=plt.pcolormesh(phase_bins,energy_bins,test_data,cmap='magma',shading='nearest',norm=LogNorm())
+# plt.xlabel('phase')
+# plt.ylabel('energy channel')
+# plt.title('Bogdanov Phase Map')
+# plt.colorbar(plot)
+# plt.savefig(IMG_DIR / 'phase_map_bogdanov.png')
+# plt.show()
 
-### Plot relative difference between the two data outputs
-plot=plt.pcolormesh(phase_bins,energy_bins,rel_diff,cmap='coolwarm',shading='nearest')
-plt.title('Relative Difference Phase Map')
-plt.xlabel('phase')
-plt.ylabel('energy channel')
-plt.colorbar(plot)
-plt.show()
+# ### Plot relative difference between the two data outputs
+# plot=plt.pcolormesh(phase_bins,energy_bins,rel_diff,cmap='coolwarm',shading='nearest')
+# plt.title('Relative Difference Phase Map')
+# plt.xlabel('phase')
+# plt.ylabel('energy channel')
+# plt.colorbar(plot)
+# plt.show()
+#
+# ### Plot absolute difference between the two data outputs
+# plot=plt.pcolormesh(phase_bins,energy_bins,normalized_absolute_diff,cmap='coolwarm',shading='nearest')
+# plt.title('Normalized Absolute Difference Phase Map')
+# plt.xlabel('phase')
+# plt.ylabel('energy channel')
+# plt.colorbar(plot)
+# plt.show()
 
-### Plot absolute difference between the two data outputs
-plot=plt.pcolormesh(phase_bins,energy_bins,normalized_absolute_diff,cmap='coolwarm',shading='nearest')
-plt.title('Normalized Absolute Difference Phase Map')
-plt.xlabel('phase')
-plt.ylabel('energy channel')
-plt.colorbar(plot)
-plt.show()
+# ### Scatter plot of relative difference vs test_data (flattened)
+# plt.figure(figsize=(10, 6))
+# plt.scatter(test_data.flatten(), rel_diff.flatten(), alpha=0.5, s=10)
+# plt.xlabel('Test Data (Observed Counts)')
+# plt.ylabel('Relative Difference')
+# plt.title('Relative Difference vs Test Data')
+# plt.xscale('log')
+# plt.yscale('log')
+# plt.grid(True, alpha=0.3)
+# plt.tight_layout()
+# plt.show()
 
-### Scatter plot of relative difference vs test_data (flattened)
-plt.figure(figsize=(10, 6))
-plt.scatter(test_data.flatten(), rel_diff.flatten(), alpha=0.5, s=10)
-plt.xlabel('Test Data (Observed Counts)')
-plt.ylabel('Relative Difference')
-plt.title('Relative Difference vs Test Data')
-plt.xscale('log')
-plt.yscale('log')
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-phase_bins_ck=(phase_bins+1/64.)%1.0
+phase_bins_ck=(phase_bins+2/64.)%1.0
 print(phase_bins)
 print(phase_bins_ck)
 # new_order = np.argsort(np.arange(len(x)) % modulus)
@@ -177,13 +182,13 @@ print(phase_bins_ck)
 ### Plot bolometric lightcurve (or switch sum axes and change to energy_bins for comparison of E distrib)
 summed_vals=shifted_phase.sum(axis=1)
 summed_vals2=test_data.sum(axis=0)
-plt.plot(np.sort(phase_bins),summed_vals,label='our method')
+plt.plot(phase_bins+0.1,summed_vals,label='Our output')
 summed_vals_wendy=shifted_phase_wendy.sum(axis=1)
-plt.plot(phase_bins,summed_vals_wendy,label='Wendy method')
-# plt.plot(phase_bins,summed_vals2,label='expected testcase')
-plt.title('Jaimes Bolometric LC (Using fortran code)')
+plt.plot(phase_bins,summed_vals_wendy,label='Wendys output')
+# plt.plot(phase_bins,summed_vals2,label='Bogdanovs testcase')
+plt.title('Bogdanovs Bolometric LC')
 plt.legend()
-# plt.savefig(IMG_DIR / 'bolometric_jaime.png')
+plt.savefig(IMG_DIR / 'bogdanov_bolometric.png')
 plt.show()
 
 ### Plot bolometric lightcurve (or switch sum axes and change to energy_bins for comparison of E distrib)

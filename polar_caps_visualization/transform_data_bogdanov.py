@@ -11,11 +11,7 @@ import sys
 from pathlib import Path
 
 
-# Select which dataset to transform: "bogdanov" (existing 2000x2000 flow) or "j0740" (new 600x600 flow).
-CASE_NAME = "j0740"
-
-
-def transform_hotspot_data(input_file, output_file, expected_shape=None):
+def transform_hotspot_data(input_file, output_file):
     """
     Transform hotspot grid data to spherical coordinates.
     
@@ -42,16 +38,11 @@ def transform_hotspot_data(input_file, output_file, expected_shape=None):
     data = np.loadtxt(input_file)
     
     # Verify dimensions
-    if expected_shape is not None and data.shape != expected_shape:
-        print(f"Warning: Expected shape {expected_shape}, got {data.shape}")
-
-    if data.ndim != 2:
-        raise ValueError(f"Expected 2D hotspot grid, got array with shape {data.shape}")
-
-    n_phi = data.shape[0] - 1
-    n_theta = data.shape[1] - 1
-    if n_phi <= 0 or n_theta <= 0:
-        raise ValueError(f"Hotspot grid must be at least 2x2, got {data.shape}")
+    if data.shape != (2000, 2000):
+        print(f"Warning: Expected shape (2000, 2000), got {data.shape}")
+    
+    n_phi = 1999  # Number of steps in phi direction
+    n_theta = 1999  # Number of steps in theta direction
     
     # Step sizes
     dph = 2.0 * np.pi / n_phi
@@ -241,30 +232,20 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
     spots = [
         {
             'name': 'spot1',
-            # 'theta_c': 0.6283,      # colatitude θc1 in radians
-            # 'theta_c': 1.387, #j0740
-            'theta_c': 1.571, # test
+            'theta_c': 0.6283,      # colatitude θc1 in radians
             # 'phi_c': 0.0,  # azimuth φ1 in radians
             # 'phi_c': 0.2,  # azimuth φ1 in radians
-            # 'phi_c': 0.827731,  # Wendy's azimuth φ1 in radians
-            'phi_c': 0, # j0740
-            # 'radius': 0.01,         # angular radius Δθ1 in radians
-            #'radius': 0.092, #j0740
-            'radius': 0.15, # test
+            'phi_c': 0.827731,  # Wendy's azimuth φ1 in radians
+            'radius': 0.01,         # angular radius Δθ1 in radians
         },
         {
             'name': 'spot2',
-            # 'theta_c': 2.077,       # colatitude θc2 in radians
-            # 'theta_c': 1.980,  # j0740
-            'theta_c': 2.9,
+            'theta_c': 2.077,       # colatitude θc2 in radians
             # 'phi_c': 3.5343,        # azimuth φ2 in radians
             # 'phi_c': 3.7343,  # azimuth φ2 in radians
             # 'phi_c': 2.74889,  # azimuth φ2 in radians
-            # 'phi_c': 3.577958, # Wendy's azimuth φ2 in radians
-            # 'phi_c': 3.5696, # j0740
-            'phi_c': 0, # test
-            # 'radius': 0.33,         # angular radius Δθ2 in radians
-            'radius': 0.15, # j0740
+            'phi_c': 3.577958, # Wendy's azimuth φ2 in radians
+            'radius': 0.33,         # angular radius Δθ2 in radians
         }
     ]
     
@@ -274,8 +255,8 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
     print(f"\nGenerating {grid_resolution}x{grid_resolution} grids from paper parameters...\n")
     
     # Step sizes (matching transform_hotspot_data)
-    n_phi = grid_resolution - 1
-    n_theta = grid_resolution - 1
+    n_phi = 1999
+    n_theta = 1999
     dph = 2.0 * np.pi / n_phi
     dcth = 2.0 / n_theta
 
@@ -311,16 +292,16 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
 
         # Add this spot into the combined hotspot grid
         combined_grid = np.maximum(combined_grid, grid)
-
+        
         # Save grid to file
-        output_file = output_dir / f"test_hotspot_{spot['name']}_600.dat"
+        output_file = output_dir / f"test_case2_{spot['name']}_shift_highres2k_jaime.dat"
     
         coverage = (point_count / (grid_resolution ** 2)) * 100
         print(f"  Found {point_count} hotspot points ({coverage:.2f}% coverage)")
         print(f"  Writing to {output_file.name}...")
         np.savetxt(str(output_file), grid, fmt='%.18e', delimiter=' ')
 
-    combined_output_file = output_dir / "test_hotspot_combined_600.dat"
+    combined_output_file = output_dir / "test_case2_combined_shift_highres2k_jaime.dat"
     combined_point_count = int(np.count_nonzero(combined_grid))
     combined_coverage = (combined_point_count / (grid_resolution ** 2)) * 100
     print(f"\nCombined hotspot grid: {combined_point_count} points ({combined_coverage:.2f}% coverage)")
@@ -480,87 +461,36 @@ def test_hotspot_parameters(model_params_list, paper_params, tolerance_theta=0.0
 
 
 def main():
-    base_path = Path(__file__).parent
-    bogdanov_dir = base_path / "bogdanov"
-    j0740_dir = base_path / "j0740"
-
-    case_configs = {
-        "bogdanov": {
-            "label": "MODEL DATA - WENDY",
-            "case_dir": bogdanov_dir,
-            "expected_shape": (2000, 2000),
-            "input_files": [
-                bogdanov_dir / "test_case2_spot1_shift_highres2k.dat",
-                bogdanov_dir / "test_case2_spot2_shift_highres2k.dat",
-            ],
-            "output_files": [
-                bogdanov_dir / "spot1_spherical_coordinates_wendy.dat",
-                bogdanov_dir / "spot2_spherical_coordinates_wendy.dat",
-            ],
-            "jaime_grid_files": [
-                bogdanov_dir / "test_case2_spot1_shift_highres2k_jaime.dat",
-                bogdanov_dir / "test_case2_spot2_shift_highres2k_jaime.dat",
-            ],
-            "jaime_output_files": [
-                bogdanov_dir / "spot1_spherical_coordinates_jaime.dat",
-                bogdanov_dir / "spot2_spherical_coordinates_jaime.dat",
-            ],
-        },
-        "j0740": {
-            "label": "J0740 BEST-FIT DATA",
-            "case_dir": j0740_dir,
-            "expected_shape": (600, 600),
-            "input_files": [
-                j0740_dir / "j0740_bestfit_NICERandXMM_spot1_600res.dat",
-                j0740_dir / "j0740_bestfit_NICERandXMM_spot2_600res.dat",
-            ],
-            "output_files": [
-                j0740_dir / "spot1_spherical_coordinates_j0740.dat",
-                j0740_dir / "spot2_spherical_coordinates_j0740.dat",
-            ],
-        },
-    }
-
-    if CASE_NAME not in case_configs:
-        valid_cases = ", ".join(case_configs.keys())
-        raise ValueError(f"Unknown CASE_NAME '{CASE_NAME}'. Valid options: {valid_cases}")
-
-    config = case_configs[CASE_NAME]
-
+    # Define input and output file paths
+    base_path = Path(__file__).parent / "bogdanov"
+    
+    # Process spot 1 - MODEL data with "WENDY" suffix
+    input_file_1 = base_path / "test_case2_spot1_shift_highres2k.dat"
+    output_file_1 = base_path / "spot1_spherical_coordinates_wendy.dat"
+    
+    # Process spot 2 - MODEL data with "WENDY" suffix
+    input_file_2 = base_path / "test_case2_spot2_shift_highres2k.dat"
+    output_file_2 = base_path / "spot2_spherical_coordinates_wendy.dat"
+    
+    # Transform both files
     print("=" * 60)
-    print(f"HOTSPOT DATA TRANSFORMATION ({config['label']})")
+    print("HOTSPOT DATA TRANSFORMATION (MODEL DATA - WENDY)")
     print("=" * 60)
-    print(f"Case selected: {CASE_NAME}")
     print()
-
-    model_params = []
-    for idx, (input_file, output_file) in enumerate(zip(config["input_files"], config["output_files"]), start=1):
-        print(f"Processing Spot {idx}...")
-        model_params.append(
-            transform_hotspot_data(
-                str(input_file),
-                str(output_file),
-                expected_shape=config["expected_shape"],
-            )
-        )
-        print()
+    
+    model_params_1 = transform_hotspot_data(str(input_file_1), str(output_file_1))
+    print()
+    
+    model_params_2 = transform_hotspot_data(str(input_file_2), str(output_file_2))
     
     print()
     print("=" * 60)
     print("Model data transformation complete!")
     print("=" * 60)
-
+    
     # Generate paper reference hotspots grid (JAIME) - directly from paper parameters
     print("\n")
-    generate_paper_hotspots_grid(grid_resolution=600, output_dir=config["case_dir"])
-
-    # Only the Bogdanov workflow includes Jaime grid generation and parameter comparison.
-    if CASE_NAME != "bogdanov":
-        return
-
-    # Generate paper reference hotspots grid (JAIME) - directly from paper parameters
-    print("\n")
-    generate_paper_hotspots_grid(grid_resolution=600, output_dir=config["case_dir"])
+    generate_paper_hotspots_grid(grid_resolution=2000, output_dir=base_path)
     
     # Transform Jaime's grid files to spherical coordinates
     print("\n")
@@ -569,8 +499,11 @@ def main():
     print("=" * 60)
     print()
     
-    jaime_spot1_grid, jaime_spot2_grid = config["jaime_grid_files"]
-    jaime_spot1_spherical, jaime_spot2_spherical = config["jaime_output_files"]
+    jaime_spot1_grid = base_path / "reproducing/test_case2_spot1_shift_highres2k.dat"
+    jaime_spot1_spherical = base_path / "reproducing/spot1_spherical_coordinates.dat"
+    
+    jaime_spot2_grid = base_path / "reproducing/test_case2_spot2_shift_highres2k.dat"
+    jaime_spot2_spherical = base_path / "reproducing/spot2_spherical_coordinates.dat"
     
     print("Processing Spot 1 (Jaime - Grid to Spherical)...")
     paper_params_1 = transform_hotspot_data(str(jaime_spot1_grid), str(jaime_spot1_spherical))
@@ -586,7 +519,7 @@ def main():
     
     # Run comparison test
     print("\n")
-    model_params_list = model_params
+    model_params_list = [model_params_1, model_params_2]
     paper_params = {'spot1': paper_params_1, 'spot2': paper_params_2}
     test_hotspot_parameters(model_params_list, paper_params)
 

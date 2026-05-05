@@ -74,8 +74,8 @@ def plot_best_fits(directory_name, pointSize=0.5):
     
     # Paper reference files
     paper_filenames = [
-        "spot1_spherical_coordinates_jaime.dat",
-        "spot2_spherical_coordinates_jaime.dat"
+        "reproducing/spot1_spherical_coordinates.dat",
+        "reproducing/spot2_spherical_coordinates.dat"
     ]
 
     # Labels and colors for model data (Wendy's)
@@ -131,5 +131,5 @@ if __name__ == "__main__":
 
 #For static versus sweepback plots
     pointSize = 5
-    directory_name = "./"
+    directory_name = "./bogdanov"
     plot_best_fits(directory_name, pointSize)
