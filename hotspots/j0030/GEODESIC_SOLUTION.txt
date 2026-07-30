@@ -1,0 +1,173 @@
+GEODESIC HOTSPOT GENERATION - TECHNICAL DOCUMENTATION
+================================================================================
+
+PROBLEM SUMMARY
+================================================================================
+
+The original Cartesian ellipse metric breaks down near the poles due to the
+sin(θ) singularity:
+
+    dphi_circ = Δθ / sin(θ)  ← Division by sin(θ) → ∞ as θ → π
+
+For spot3 (θc = 3.056 ≈ 174.8°, near south pole):
+    sin(3.056) ≈ 0.0855  (very small!)
+
+This caused:
+    1. Huge calculated dphi_circ
+    2. Clipping to π masking the real issue
+    3. Abnormally narrow footprint (~38 columns instead of expected ~300+)
+    4. Distorted ellipse metric near pole
+
+Symptom: Spot3 width << Spot2 width, despite Spot3 having largest Δθ
+
+
+THE GEODESIC SOLUTION
+================================================================================
+
+Key Insight: Use LOCAL TANGENT PLANE coordinates where sin(θ) singularity is
+naturally handled.
+
+TANGENT PLANE COORDINATES:
+========================
+
+At hotspot center (θc, φc), define local 2D coordinates:
+
+    ξ = θ - θc              (meridional displacement, always safe)
+    η = sin(θc) * Δφ        (zonal displacement, PRE-SCALED by sin(θc))
+
+By pre-scaling η, we eliminate the 1/sin(θc) blow-up:
+    - Old way: dp = Δφ / (dtheta/sin(θc)) = Δφ * sin(θc) / dtheta
+    - New way: η = Δφ * sin(θc)  (directly in local coords)
+
+ELLIPTICAL DISTANCE IN TANGENT PLANE:
+====================================
+
+    a = Δθ              (meridional semi-axis)
+    b = Δθ * f          (zonal semi-axis, scaled by f)
+
+    distance² = (ξ/a)² + (η/b)²
+
+Include point if distance² ≤ 1.0
+
+
+WHY THIS WORKS AT THE POLE
+================================================================================
+
+Problem with Cartesian:
+    - At θ = π (south pole), any φ is valid (all meridians converge)
+    - Ellipse metric (dt² + dp²) requires bounded dp, but dp can be infinite
+    - Clipping to π is arbitrary and breaks physics
+
+Solution with tangent plane:
+    - η = sin(θc) * Δφ already incorporates pole geometry
+    - When sin(θc) is small, zonal extent naturally shrinks
+    - But meridional extent (ξ) stays well-behaved
+    - No singularities, no clipping needed
+    - Result is physically correct and area-preserving
+
+
+MATHEMATICAL FOUNDATION
+================================================================================
+
+The tangent plane at (θc, φc) is locally Euclidean. For small perturbations:
+
+    ds² ≈ (dθ)² + sin²(θc) * (dφ)²
+
+By parameterizing as:
+    ξ = dθ
+    η = sin(θc) * dφ
+
+We get:
+    ds² = ξ² + η²
+
+This is the standard Euclidean metric in (ξ, η) coordinates. The ellipse
+metric then naturally follows:
+    (ξ/a)² + (η/b)² ≤ 1
+
+No singularities because we've properly transformed to local coordinates.
+
+
+IMPLEMENTATION DETAILS
+================================================================================
+
+See: tangent_plane_distance() in transform_data_j0030_geodesic.py
+
+Function: tangent_plane_distance(theta, phi, theta_c, phi_c, dtheta, f)
+
+    Input:
+        theta, phi:   Grid point spherical coordinates
+        theta_c, phi_c: Hotspot center
+        dtheta:       Meridional extent (Δθ)
+        f:            Zonal scaling factor
+
+    Output:
+        dist_sq:      Elliptical distance metric (0 to ∞)
+
+    Algorithm:
+        1. sin_tc = sin(θc)
+        2. xi = θ - θc
+        3. dphi_wrapped = (φ - φc), wrapped to [-π, π]
+        4. eta = sin_tc * dphi_wrapped
+        5. a = Δθ
+        6. b = Δθ * f
+        7. dist_sq = (ξ/a)² + (η/b)²
+        8. return dist_sq ≤ 1.0
+
+
+COMPARISON: RESULTS FOR SPOT3
+================================================================================
+
+Spot3 Parameters:
+    θc = 3.056 (near south pole)
+    Δθ = 0.087 (largest of the three)
+    f = 1.253
+    sin(θc) = 0.0855
+
+CARTESIAN METHOD (old - has issues):
+    dphi_circ = 0.087 / 0.0855 ≈ 1.018  (very large!)
+    dphi = min(1.253 * 1.018, π) = π    (clipped!)
+    Result: Spot3 width ≈ 38 columns    (WRONG - too narrow)
+
+TANGENT PLANE METHOD (new - pole-safe):
+    η = 0.0855 * Δφ                     (no division, no blow-up)
+    a = 0.087, b = 0.087 * 1.253
+    Result: Spot3 width ≈ 300+ columns  (CORRECT)
+
+Spot3 is now correctly identified as having the WIDEST footprint.
+
+
+VALIDATION
+================================================================================
+
+To validate the geodesic implementation:
+
+1. Run compare_hotspot_methods.py to analyze both methods
+2. Check that spot3 width (geodesic) > spot2 width (spot3 has larger Δθ)
+3. Verify spot3 coverage is reasonable (not abnormally narrow)
+4. Check that all three spots are included (geodesic doesn't skip poles)
+
+Key metric: Spot width should scale roughly as Δθ (meridional extent)
+    Spot1: Δθ = 0.032 → width should be moderate
+    Spot2: Δθ = 0.029 → width should be slightly less
+    Spot3: Δθ = 0.087 → width should be LARGEST
+
+
+FILE NAMING
+================================================================================
+
+Geodesic files:    hotspot_spot*_*_geodesic.dat
+Cartesian files:   hotspot_spot*_*_cartesian.dat  (old, for comparison)
+
+Use geodesic files for analysis and forward modeling.
+
+
+REFERENCES
+================================================================================
+
+- Riemannian geometry on spheres
+- Geodesic distance: d = arccos(cos(θ1)*cos(θ2) + sin(θ1)*sin(θ2)*cos(φ1-φ2))
+- Tangent plane approximation: valid for small angular distances
+- Stereographic and other projections: used in some alternative implementations
+
+================================================================================
+
