@@ -7,9 +7,9 @@ from astropy.constants.codata2022 import alpha
 from matplotlib.colors import LogNorm
 from scipy.interpolate import interp1d
 
-# Get the project root directory (parent of compare_results)
+# Get the project root directory (parent of bogdanov)
 PROJECT_ROOT = Path(__file__).parent.parent
-COMPARE_DIR = PROJECT_ROOT / 'compare_results'
+COMPARE_DIR = PROJECT_ROOT / 'bogdanov'
 IMG_DIR = PROJECT_ROOT / 'images'
 
 def dat_to_csv(dat_path, csv_path=None, delimiter=None, header=False):

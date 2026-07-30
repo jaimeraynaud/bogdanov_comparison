@@ -12,13 +12,14 @@ def analyze_method_results():
     """Analyze results from all three generation methods."""
     
     base_dir = Path(__file__).parent / "hotspots"
+    print("BASE DIR: ", base_dir)
     grid_res = 5000
     spots = ['spot1', 'spot2', 'spot3']
     
     methods = {
-        'cartesian': f'hotspot_spot*_{grid_res}_cartesian.dat',
-        'tangent_plane': f'hotspot_spot*_{grid_res}_geodesic.dat',
-        '3d_geodesic': f'hotspot_spot*_{grid_res}_3d_geodesic.dat',
+        'cartesian': f'hotspot_*_{grid_res}_cartesian.dat',
+        'tangent_plane': f'hotspot_*_{grid_res}_geodesic.dat',
+        '3d_geodesic': f'hotspot_*_{grid_res}_3d_geodesic.dat',
     }
     
     print("\n" + "="*100)
@@ -43,6 +44,7 @@ def analyze_method_results():
         for spot in spots:
             file_pattern_specific = file_pattern.replace('*', spot)
             filepath = base_dir / file_pattern_specific
+            print("FILE PATH: ",filepath)
             
             if filepath.exists():
                 data = np.loadtxt(filepath)

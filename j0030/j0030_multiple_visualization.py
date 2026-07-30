@@ -414,9 +414,15 @@ def parse_args():
     )
     parser.add_argument(
         "--nas-dir",
+        dest="nas_dirs",
         type=Path,
-        default=DEFAULT_NAS_DIR,
-        help=f"Directory containing NAS spot count files (default: {DEFAULT_NAS_DIR})",
+        action="append",
+        default=None,
+        help=(
+            "Directory containing NAS spot count files. Repeat this option to compare "
+            "multiple directories in one plot. "
+            f"(default: {DEFAULT_NAS_DIR})"
+        ),
     )
     parser.add_argument(
         "--value-columns",
@@ -464,6 +470,13 @@ def main():
     input_file = args.input
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
+    # nas_dirs = args.nas_dirs if args.nas_dirs else [DEFAULT_NAS_DIR]
+    # Change here
+    nas_dirs = args.nas_dirs if args.nas_dirs else [
+        Path(__file__).parent / "data" / "twohotspots/oldnsx/51",  #
+        Path(__file__).parent / "data" / "mirroring",                    # X=700
+        # Path(__file__).parent / "data" / "twohotspots/oldnsx",                   # X=1000
+    ]
 
     data = load_phase_channel_table(input_file)
     unique_col0 = np.unique(data[:, 0])
@@ -480,11 +493,11 @@ def main():
         f"{unique_col1[:10]}{' ...' if len(unique_col1) > 10 else ''}"
     )
 
-    nas_curves = None
+    nas_curves_by_dir: dict[Path, dict[str, np.ndarray]] = {}
 
     # Plot the 2D energy-phase map directly from the NAS spot1+spot2 _test_data_counts.dat files.
     # plot_nas_spot_phase_energy_map(
-    #     nas_dir=args.nas_dir,
+    #     nas_dir=nas_dirs[0],
     #     spot_names=("spot1", "spot2"),
     #     output_path=output_dir / "j0030_nas_spots_phase_energy_map.png",
     #     show=not args.no_show,
@@ -537,23 +550,43 @@ def main():
         overlay_curves = None
         overlay_suffix = None
         if value_column == 3 or value_column == 4:
-            if nas_curves is None:
-                nas_curves = load_nas_spot_curves(args.nas_dir, phase_count=len(phase_vals))
+            for nas_dir in nas_dirs:
+                if nas_dir not in nas_curves_by_dir:
+                    nas_curves_by_dir[nas_dir] = load_nas_spot_curves(
+                        nas_dir, phase_count=len(phase_vals)
+                    )
 
             add_factor = 0
             multiply_factor = 1.0  # <-- your factor here
-            nas_total = (nas_curves["spot1"] + nas_curves["spot2"]) * multiply_factor + add_factor #+ nas_curves["spot3"]
+            overlay_curves = []
+            for idx, nas_dir in enumerate(nas_dirs):
+                nas_curves = nas_curves_by_dir[nas_dir]
+                nas_total = (
+                        (nas_curves["spot1"] + nas_curves["spot2"]) * multiply_factor + add_factor
+                )
 
-            overlay_curves = [
-                # ("Observed counts", observed_bolometric, {"color": "green", "lw": 2.0}),
-                ("Our model", nas_total, {"color": "tab:orange", "lw": 2.0}),
-                ("spot 1", nas_curves["spot1"], {"color": "tab:cyan", "lw": 1.0, "ls": "--"}),
-                ("spot 2", nas_curves["spot2"], {"color": "tab:red", "lw": 1.0, "ls": "--"}),
-                ("spot 3", nas_curves["spot3"], {"color": "tab:purple", "lw": 1.0, "ls": "--"}),
-            ]
+                if nas_dir.name == "51":
+                    curve_label = "v1.02 RMF with 51/52 factor"
+                elif nas_dir.name == "crab":
+                    curve_label = "d49 RMF with 49/52 factor"
+                else:
+                    curve_label = f"Our model ({nas_dir.name})"
+
+                overlay_curves.append((curve_label, nas_total, {"lw": 1.0}))
+
+                # Keep per-spot guides only in single-directory mode to avoid clutter.
+                if len(nas_dirs) == 1 and idx == 0:
+                    overlay_curves.extend(
+                        [
+                            ("spot 1", nas_curves["spot1"], {"color": "tab:cyan", "lw": 1.0, "ls": "--"}),
+                            ("spot 2", nas_curves["spot2"], {"color": "tab:red", "lw": 1.0, "ls": "--"}),
+                            ("spot 3", nas_curves["spot3"], {"color": "tab:purple", "lw": 1.0, "ls": "--"}),
+                        ]
+                    )
+
             print(f"DEBUG: overlay_curves has {len(overlay_curves)} curves")
             print(f"DEBUG: observed curve shape={(observed_bolometric + 10000).shape}, min={(observed_bolometric + 10000).min():.2f}, max={(observed_bolometric + 10000).max():.2f}")
-            overlay_suffix = "with_nas_spots"
+            overlay_suffix = "with_nas_spots" if len(nas_dirs) == 1 else "with_nas_spots_multi"
 
         plot_phase_energy_and_bolometric(
             energy_vals=energy_vals,

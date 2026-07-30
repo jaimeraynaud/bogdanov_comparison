@@ -55,11 +55,13 @@ env/
 htmlcov/
 
 # Keep Python files but ignore data directories
-Bogdanov_testcase2_data/*
+bogdanov/bogdanov_data/*
 !Bogdanov_testcase2_data/*.py
 fortran_input_files/*
 !fortran_input_files/*.py
 images/*
 !images/*.py
+
+training_nn/data/*
 
 

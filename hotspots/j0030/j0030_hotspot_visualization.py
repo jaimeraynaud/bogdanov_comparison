@@ -13,28 +13,42 @@ import numpy as np
 # NEW: 3-SPOT PAPER PARAMETERS
 # ===============================
 
+# PAPER_PARAMS = {
+#     "j0030 Spot 1": {
+#         "theta_c": 2.330,
+#         "dtheta": 0.032,
+#         # "phi_c": 0.0,
+#         "phi_c": 2.61799,
+#         "f": 5.335,
+#     },
+#     "j0030 Spot 2": {
+#         "theta_c": 2.446,
+#         "dtheta": 0.029,
+#         "phi_c": 2.61799 - 2 * np.pi * 0.463,
+#         "f": 16.588,
+#     },
+#     "j0030 Spot 3": {
+#         "theta_c": 3.056,
+#         "dtheta": 0.087,
+#         "phi_c": 2.61799 - 2 * np.pi * 0.427,
+#         "f": 1.253,
+#     },
+# }
 PAPER_PARAMS = {
     "j0030 Spot 1": {
-        "theta_c": 2.330,
-        "dtheta": 0.032,
-        # "phi_c": 0.0,
+        "theta_c": 2.232,
+        "dtheta": 0.031,
         "phi_c": 2.61799,
-        "f": 5.335,
+        "f": 6.024,
     },
     "j0030 Spot 2": {
-        "theta_c": 2.446,
+        "theta_c": 2.394,
         "dtheta": 0.029,
-        "phi_c": 2.61799 - 2 * np.pi * 0.463,
-        "f": 16.588,
+        "phi_c": 2.61799 - 2 * np.pi * 0.458,
+        "f": 17.744,
     },
-    "j0030 Spot 3": {
-        "theta_c": 3.056,
-        "dtheta": 0.087,
-        "phi_c": 2.61799 - 2 * np.pi * 0.427,
-        "f": 1.253,
-    },
-}
 
+}
 
 def compute_dphi(theta_c, dtheta, f):
     """Compute longitudinal half-width Δφ."""
@@ -109,13 +123,15 @@ def plot_j0030(directory, point_size=6.0, save_path=None, show=True):
     directory = Path(directory)
 
     spot_files = [
-        directory / "hotspot_spot1.dat",
-        directory / "hotspot_spot2.dat",
-        directory / "hotspot_spot3.dat",
-        ]
-
+        # directory / "hotspot_spot1_7000_j0030_combined_test.dat",
+        # directory / "hotspot_spot2_7000_j0030_combined_test.dat",
+        # directory / "hotspot_combined_7000_j0030_combined_test.dat",
+        directory / "hotspot_computed.dat",
+        directory / "hotspot_computed.dat",
+        directory / "hotspot_computed.dat",
+    ]
     titles = ["j0030 Spot 1", "j0030 Spot 2", "j0030 Spot 3"]
-    colors = ["tab:red", "tab:green", "tab:blue"]
+    colors = ["tab:red", "tab:blue", "tab:green"]
 
     fig, ax = plt.subplots(figsize=(8, 6), dpi=180)
 
@@ -140,6 +156,7 @@ def plot_j0030(directory, point_size=6.0, save_path=None, show=True):
         params = PAPER_PARAMS[title]
 
         theta_c = params["theta_c"]
+        phi_c = params["phi_c"]
         phi_c = invert_phi(params["phi_c"])
         dtheta = params["dtheta"]
         dphi = compute_dphi(theta_c, dtheta, params["f"])
@@ -185,7 +202,7 @@ def plot_j0030(directory, point_size=6.0, save_path=None, show=True):
         ax.plot(phi_ellipse, theta_ellipse, color="black", linewidth=1.0)
 
     # Add observer angle line at theta = 1.012
-    observer_theta = 1.012
+    observer_theta = 1.6
     phi_observer = np.linspace(0, 2 * np.pi, 200)
     ax.axhline(y=observer_theta, color="k", linestyle="--", linewidth=1.5, label=f"Observer angle θ={observer_theta:.3f}")
 
@@ -222,10 +239,10 @@ def plot_j0030_mollweide(directory, point_size=6.0, save_path=None, show=True):
     directory = Path(directory)
 
     spot_files = [
-        directory / "hotspot_spot1.dat",
-        directory / "hotspot_spot2.dat",
-        directory / "hotspot_spot3.dat",
-    ]
+        directory / "hotspot_spot1_7000_j0030_combined_test.dat",
+        directory / "hotspot_spot2_7000_j0030_combined_test.dat",
+        directory / "hotspot_combined_7000_j0030_combined_test.dat",
+        ]
 
     titles = ["j0030 Spot 1", "j0030 Spot 2", "j0030 Spot 3"]
     colors = ["tab:red", "tab:green", "tab:blue"]
@@ -256,6 +273,7 @@ def plot_j0030_mollweide(directory, point_size=6.0, save_path=None, show=True):
         params = PAPER_PARAMS[title]
 
         theta_c = params["theta_c"]
+        phi_c = params["phi_c"]
         phi_c = invert_phi(params["phi_c"])
         dtheta = params["dtheta"]
         dphi = compute_dphi(theta_c, dtheta, params["f"])
@@ -323,10 +341,10 @@ def plot_j0030_southpole(directory, point_size=6.0, save_path=None, show=True):
     directory = Path(directory)
 
     spot_files = [
-        directory / "hotspot_spot1.dat",
-        directory / "hotspot_spot2.dat",
-        directory / "hotspot_spot3.dat",
-    ]
+        directory / "hotspot_spot1_7000_j0030_combined_test.dat",
+        directory / "hotspot_spot2_7000_j0030_combined_test.dat",
+        directory / "hotspot_combined_7000_j0030_combined_test.dat",
+        ]
 
     titles = ["j0030 Spot 1", "j0030 Spot 2", "j0030 Spot 3"]
     colors = ["tab:red", "tab:green", "tab:blue"]
@@ -361,6 +379,7 @@ def plot_j0030_southpole(directory, point_size=6.0, save_path=None, show=True):
 
         params = PAPER_PARAMS[title]
         theta_c = params["theta_c"]
+        phi_c = params["phi_c"]
         phi_c = invert_phi(params["phi_c"])
         dtheta = params["dtheta"]
         dphi = compute_dphi(theta_c, dtheta, params["f"])
@@ -430,11 +449,9 @@ def plot_j0030_southpole(directory, point_size=6.0, save_path=None, show=True):
 
 
 def parse_args():
-    script_dir = Path(__file__).parent
-    default_dir = script_dir / "hotspots"
-
+    # Set the new default directory for plotting
     parser = argparse.ArgumentParser()
-    parser.add_argument("--directory", type=Path, default=default_dir)
+    parser.add_argument("--directory", type=Path, default=Path("/Users/jraynau1/Workspace/data_analysis_visualization/hotspots/j0030/hotspots/j0030_combined_test"))
     parser.add_argument("--point-size", type=float, default=6.0)
     parser.add_argument("--save", type=Path, default=None)
     parser.add_argument("--no-show", action="store_true")
@@ -456,23 +473,23 @@ def main():
         save_path=save_rect,
         show=False,
     )
-    fig_moll = plot_j0030_mollweide(
-        directory=args.directory,
-        point_size=args.point_size,
-        save_path=save_moll,
-        show=False,
-    )
-    fig_south = plot_j0030_southpole(
-        directory=args.directory,
-        point_size=args.point_size,
-        save_path=save_south,
-        show=False,
-    )
+    # fig_moll = plot_j0030_mollweide(
+    #     directory=args.directory,
+    #     point_size=args.point_size,
+    #     save_path=save_moll,
+    #     show=False,
+    # )
+    # fig_south = plot_j0030_southpole(
+    #     directory=args.directory,
+    #     point_size=args.point_size,
+    #     save_path=save_south,
+    #     show=False,
+    # )
 
     if args.no_show:
         plt.close(fig_rect)
-        plt.close(fig_moll)
-        plt.close(fig_south)
+        # plt.close(fig_moll)
+        # plt.close(fig_south)
     else:
         plt.show()
 

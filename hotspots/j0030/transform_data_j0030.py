@@ -70,27 +70,44 @@ def generate_paper_hotspots_grid(grid_resolution=600, output_dir=None):
     # ===============================
     # NEW: 3 OVAL HOTSPOTS
     # ===============================
+    # spots = [
+    #     {
+    #         'name': 'spot1',
+    #         'theta_c': 2.330,
+    #         'dtheta': 0.032,
+    #         'phi_c': 2.61799,
+    #         'f': 5.335,
+    #     },
+    #     {
+    #         'name': 'spot2',
+    #         'theta_c': 2.446,
+    #         'dtheta': 0.029,
+    #         'phi_c': 2.61799 - 2 * np.pi * 0.463,
+    #         'f': 16.588,
+    #     },
+    #     {
+    #         'name': 'spot3',
+    #         'theta_c': 3.056,
+    #         'dtheta': 0.087,
+    #         'phi_c': 2.61799 - 2 * np.pi * 0.427,
+    #         'f': 1.253,
+    #     }
+    # ]
+    # Two hotspot model
     spots = [
         {
             'name': 'spot1',
-            'theta_c': 2.330,
-            'dtheta': 0.032,
+            'theta_c': 2.232,
+            'dtheta': 0.031,
             'phi_c': 2.61799,
-            'f': 5.335,
+            'f': 6.024,
         },
         {
             'name': 'spot2',
-            'theta_c': 2.446,
+            'theta_c': 2.394,
             'dtheta': 0.029,
-            'phi_c': 2.61799+2 * np.pi * 0.463,
-            'f': 16.588,
-        },
-        {
-            'name': 'spot3',
-            'theta_c': 3.056,
-            'dtheta': 0.087,
-            'phi_c': 2.61799+2 * np.pi * 0.427,
-            'f': 1.253,
+            'phi_c': 2.61799 - 2 * np.pi * 0.458,
+            'f': 17.744,
         }
     ]
     # spots = [
@@ -107,19 +124,27 @@ def generate_paper_hotspots_grid(grid_resolution=600, output_dir=None):
     print("GENERATING OVAL HOTSPOT GRIDS (3 SPOTS)")
     print("=" * 60)
 
-    n_phi = grid_resolution - 1
-    n_theta = grid_resolution - 1
+    # n_phi = grid_resolution - 1
+    # n_theta = grid_resolution - 1
+    # dph = 2.0 * np.pi / n_phi
+    # dcth = 2.0 / n_theta
+
+    # combined_grid = np.zeros((grid_resolution, grid_resolution)) # goes from 0..grid_resolution - 1
+
+    # to review
+    n_phi = grid_resolution
+    n_theta = grid_resolution
     dph = 2.0 * np.pi / n_phi
     dcth = 2.0 / n_theta
 
-    combined_grid = np.zeros((grid_resolution, grid_resolution))
+    combined_grid = np.zeros((grid_resolution + 1, grid_resolution + 1)) # goes from 0..grid_resolution
 
     for spot in spots:
 
         print(f"\nProcessing {spot['name']}")
         print(f"θc={spot['theta_c']:.3f}, Δθ={spot['dtheta']:.3f}, f={spot['f']}")
 
-        grid = np.zeros((grid_resolution, grid_resolution))
+        grid = np.zeros((grid_resolution + 1, grid_resolution + 1))
         point_count = 0
 
         theta_c = spot['theta_c']
@@ -142,8 +167,10 @@ def generate_paper_hotspots_grid(grid_resolution=600, output_dir=None):
         # Enforce max width ≤ π
         dphi = min(dphi, np.pi)
 
-        for i in range(grid_resolution):
-            for j in range(grid_resolution):
+        # for i in range(grid_resolution):
+        #     for j in range(grid_resolution):
+        for i in range(grid_resolution + 1): # to review
+            for j in range(grid_resolution + 1):
 
                 phi = i * dph
                 cos_theta = -1.0 + j * dcth
@@ -158,7 +185,7 @@ def generate_paper_hotspots_grid(grid_resolution=600, output_dir=None):
 
         combined_grid = np.maximum(combined_grid, grid)
 
-        output_file = output_dir / f"hotspot_{spot['name']}_{grid_resolution}.dat"
+        output_file = output_dir / f"hotspot_{spot['name']}_{grid_resolution}_twohotspots.dat"
         np.savetxt(output_file, grid, fmt='%.18e', delimiter=' ')
 
         coverage = point_count / (grid_resolution**2) * 100
@@ -178,7 +205,7 @@ def main():
     case_dir = base_path / "hotspots"
 
     generate_paper_hotspots_grid(
-        grid_resolution=2000,
+        grid_resolution=7000,
         output_dir=case_dir
     )
 

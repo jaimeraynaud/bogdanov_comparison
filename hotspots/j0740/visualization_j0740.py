@@ -77,7 +77,7 @@ def circular_mean_angle(angles):
 
 def plot_j0740(directory, point_size=6.0, save_path=None, show=True):
     """Plot theta vs phi for the two J0740 hotspot files."""
-    directory = Path(directory)
+    directory = Path(directory).parent
     # spot_files = [
     #     directory / "j0740_bestfit_NICERandXMM_spot1_2kres.dat",
     #     directory / "j0740_bestfit_NICERandXMM_spot2_2kres_shiftoppos.dat",
@@ -87,8 +87,8 @@ def plot_j0740(directory, point_size=6.0, save_path=None, show=True):
     #     directory / "j0740_hotspot_spot2_5k.dat",
     # ]
     spot_files = [
-        directory / "test_hotspot_spot1_600.dat",
-        directory / "test_hotspot_spot2_600.dat",
+        directory / "hotspot_spot1_5000_j0740.dat",
+        directory / "hotspot_spot2_5000_j0740.dat",
     ]
 
     titles = ["J0740 Spot 1", "J0740 Spot 2"]

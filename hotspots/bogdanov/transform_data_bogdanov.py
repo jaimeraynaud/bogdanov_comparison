@@ -208,7 +208,8 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
     """
     Generate hotspot grid directly from paper reference parameters.
     
-    Creates a 2000x2000 grid where 1 represents hotspot points and 0 represents non-hotspot points,
+    Creates an endpoint-inclusive grid of size (grid_resolution+1) x (grid_resolution+1)
+    where 1 represents hotspot points and 0 represents non-hotspot points,
     based on the paper's hotspot parameters (center and radius).
     
     Parameters
@@ -252,17 +253,19 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
     print("=" * 60)
     print("PAPER REFERENCE HOTSPOTS GRID GENERATION (JAIME)")
     print("=" * 60)
-    print(f"\nGenerating {grid_resolution}x{grid_resolution} grids from paper parameters...\n")
+    print(
+        f"\nGenerating {(grid_resolution + 1)}x{(grid_resolution + 1)} "
+        "endpoint-inclusive grids from paper parameters...\n"
+    )
     
-    # Step sizes (matching transform_hotspot_data)
-    # Number of steps is grid_resolution - 1 (since indices go from 0 to grid_resolution-1)
-    n_phi = grid_resolution - 1
-    n_theta = grid_resolution - 1
+    # Endpoint-inclusive indexing: i,j in [0, grid_resolution]
+    n_phi = grid_resolution
+    n_theta = grid_resolution
     dph = 2.0 * np.pi / n_phi
     dcth = 2.0 / n_theta
 
     # Combined grid that will contain both hotspots
-    combined_grid = np.zeros((grid_resolution, grid_resolution), dtype=float)
+    combined_grid = np.zeros((grid_resolution + 1, grid_resolution + 1), dtype=float)
     
     # Process each spot
     for spot in spots:
@@ -271,13 +274,13 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
         print(f"  Radius: {spot['radius']:.4f} rad")
         
         # Initialize grid
-        grid = np.zeros((grid_resolution, grid_resolution), dtype=float)
+        grid = np.zeros((grid_resolution + 1, grid_resolution + 1), dtype=float)
         
         point_count = 0
         
         # Iterate through grid and check if each point is within the hotspot
-        for i in range(grid_resolution):
-            for j in range(grid_resolution):
+        for i in range(grid_resolution + 1):
+            for j in range(grid_resolution + 1):
                 # Map grid indices to spherical coordinates
                 phi = i * dph
                 cos_theta = -1.0 + j * dcth
@@ -295,16 +298,16 @@ def generate_paper_hotspots_grid(grid_resolution=2000, output_dir=None):
         combined_grid = np.maximum(combined_grid, grid)
         
         # Save grid to file
-        output_file = output_dir / f"test_case2_{spot['name']}_shift_highres2k_jaime.dat"
+        output_file = output_dir / f"test_case2_{spot['name']}_shift_highres2k_newconvention.dat"
     
-        coverage = (point_count / (grid_resolution ** 2)) * 100
+        coverage = (point_count / ((grid_resolution + 1) ** 2)) * 100
         print(f"  Found {point_count} hotspot points ({coverage:.2f}% coverage)")
         print(f"  Writing to {output_file.name}...")
         np.savetxt(str(output_file), grid, fmt='%.18e', delimiter=' ')
 
     combined_output_file = output_dir / "test_case2_combined_shift_highres2k_jaime.dat"
     combined_point_count = int(np.count_nonzero(combined_grid))
-    combined_coverage = (combined_point_count / (grid_resolution ** 2)) * 100
+    combined_coverage = (combined_point_count / ((grid_resolution + 1) ** 2)) * 100
     print(f"\nCombined hotspot grid: {combined_point_count} points ({combined_coverage:.2f}% coverage)")
     print(f"Writing combined grid to {combined_output_file.name}...")
     np.savetxt(str(combined_output_file), combined_grid, fmt='%.18e', delimiter=' ')
@@ -463,7 +466,8 @@ def test_hotspot_parameters(model_params_list, paper_params, tolerance_theta=0.0
 
 def main():
     # Define input and output file paths
-    base_path = Path(__file__).parent / "bogdanov"
+    # Script already lives in hotspots/bogdanov, so parent is the data directory.
+    base_path = Path(__file__).parent
     
     # Process spot 1 - MODEL data with "WENDY" suffix
     input_file_1 = base_path / "test_case2_spot1_shift_highres2k.dat"

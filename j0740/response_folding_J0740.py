@@ -41,12 +41,18 @@ with open(filename, 'r') as f:
 spot1_wendy = pd.read_csv('wendy_outputs/spot1_photcounts_NICERandXMM_v2.csv')
 spot2_wendy = pd.read_csv('wendy_outputs/spot2_photcounts_NICERandXMM_v2.csv')
 
+# spot1_old = np.loadtxt('jaime_outputs/responsefunc/spot1_test_data_counts.dat')
+# spot2_old = np.loadtxt('jaime_outputs/responsefunc/spot2_test_data_counts.dat')
+
 # #read in data for our method - files are already in final shape
 # spot1_our_method = np.loadtxt('reproducing/spot1_photcounts_nofolding.dat')
 # spot2_our_method = np.loadtxt('reproducing/spot2_photcounts_nofolding.dat')
 
-spot1_our = np.loadtxt('reproducing/spot1_test_data_counts.dat')
-spot2_our = np.loadtxt('reproducing/spot2_test_data_counts.dat')
+spot1_old = np.loadtxt('reproducing/spot1_test_data_counts.dat')
+spot2_old = np.loadtxt('reproducing/spot2_test_data_counts.dat')
+
+spot1_our = np.loadtxt('latest/spot1_test_data_counts.dat')
+spot2_our = np.loadtxt('latest/spot2_test_data_counts.dat')
 
 # Save data as CSV with same name format
 # np.savetxt('jaime_outputs/offset/spot1_photcounts_nofolding_jaime.csv', spot1_our_method, delimiter=',', fmt='%.10e')
@@ -62,8 +68,10 @@ spot2_wendy=np.array(spot2_wendy)
 
 both_spots_wendy=spot1_wendy+spot2_wendy
 both_spots_our_method=spot1_our+spot2_our
+both_spots_old = spot1_old+spot2_old
 
-print("Jaime's data shape: ", both_spots_our_method.shape)
+print("Old's data shape: ", both_spots_old.shape)
+print("New's data shape: ", both_spots_our_method.shape)
 print("Wendy's data shape: ",both_spots_wendy.shape)
 
 Nchan_wendy=len(both_spots_wendy[0])
@@ -78,13 +86,13 @@ chan_width=0.005 #in eV
 for i in range(32): #number of phases
     for j in range(Nchan_wendy): #number of channels
         val1,val2,i1,i2=find_bounds(j*chan_width+0.1+chan_width/2.0, eminNICER) #locate bounds for channel bin centers not edges (response func is unevenly binned)
-        map_wendy[i,:] = map_wendy[i,:]+both_spots_wendy[i,j]*areaNICER[i1,30:124]*(1.0/32.0)*2733.81*1000.0 #30:124 = target chans, (1/32)*2733.81*1000.0 = exposure time per bin
+        map_wendy[i,:] = map_wendy[i,:]+both_spots_wendy[i,j]*areaNICER[i1,30:124]*(1.0/32.0)*2733.81*1000.0 #30:124 = target chans, (1/32)*2733.81*1500.0 = exposure time per bin
 
 # # Process Jaime method with the same transformations
 # for i in range(32):
 #     for j in range(Nchan_jaime):
 #         val1,val2,i1,i2=find_bounds(j*chan_width+0.1+chan_width/2.0, eminNICER)
-#         map_jaime[i,:] = map_jaime[i,:]+both_spots_our_method[i,j]*areaNICER[i1,30:124]*(1.0/32.0)*2733.81*1000.0
+#         map_jaime[i,:] = map_jaime[i,:]+both_spots_our_method[i,j]*areaNICER[i1,30:124]*(1.0/32.0)*2733.81*1500.0
 
 
 #plot energy-phase map
@@ -92,6 +100,7 @@ phase_bins = np.linspace(0.0, 1-1/32, 32)
 energy_bins = np.linspace(31, 123, 94)
 shifted_phase_wendy = np.concatenate((map_wendy[30:,],map_wendy[:30,]),axis=0) #shift phase to try and match (shift actual hotspots to fine tune)
 shifted_phase_jaime = np.concatenate((both_spots_our_method[30:,],both_spots_our_method[:30,]),axis=0)
+shifted_phase_old = np.concatenate((both_spots_old[30:,], both_spots_old[:30,]), axis=0)
 # shifted_phase_responsefunc = np.concatenate((both_spots_responsefunc[30:,],both_spots_responsefunc[:30,]),axis=0)
 
 # Keep Wendy comparison for continuity
@@ -167,16 +176,18 @@ rel_diff=(NS_counts-shifted_phase_wendy[:32,:].T)/NS_counts
 
 #bolometric lightcurve comparison
 summed_vals_wendy=shifted_phase_wendy.sum(axis=1)
-summed_vals_our_method=shifted_phase_jaime.sum(axis=1)*((1.0/32.0)*2733.81*1000.0)/((1.0/32.0)*(10.0**6)) #apply same folding to response func data for fair comparison
-# summed_vals_responsefunc=shifted_phase_responsefunc.sum(axis=1)*((1.0/32.0)*2733.81*1000.0)/((1.0/32.0)*(10.0**6)) #apply same folding to response func data for fair comparison
+summed_vals_our_method=shifted_phase_jaime.sum(axis=1)#*((1.0/32.0)*2733.81*1500.0)/((1.0/32.0)*(10.0**6)) #apply same folding to response func data for fair comparison
+summed_vals_old=shifted_phase_old.sum(axis=1)#*((1.0/32.0)*2733.81*1000.0)/((1.0/32.0)*(10.0**6)) #apply same folding to response func data for fair comparison
+
+# summed_vals_responsefunc=shifted_phase_responsefunc.sum(axis=1)*((1.0/32.0)*2733.81*1500.0)/((1.0/32.0)*(10.0**6)) #apply same folding to response func data for fair comparison
 summed_vals_expected=NS_counts.sum(axis=0)
 print(phase_bins)
 phase_bins_ck=(phase_bins-1/64.)#%1.0
 print(phase_bins_ck)
 
 fig, ax = plt.subplots()
-ax.plot(phase_bins_ck, summed_vals_wendy, label='Wendys output')
-ax.plot(phase_bins, summed_vals_our_method, label='Our output')
+ax.plot(phase_bins, summed_vals_old, label='Older output')
+ax.plot(phase_bins, summed_vals_our_method, label='Newer output')
 ax.plot(phase_bins, summed_vals_expected, label='Dittmans output')
 ax.set_title("J0740 Bolometric LC")
 ax.legend()

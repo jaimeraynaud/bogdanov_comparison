@@ -67,13 +67,13 @@ def infer_phase_energy_map(data: np.ndarray, value_column: int = 3):
 
 
 def plot_phase_energy_map(
-    energy_vals: np.ndarray,
-    phase_vals: np.ndarray,
-    phase_energy_map: np.ndarray,
-    title: str,
-    output_path: Path | None = None,
-    show: bool = True,
-    cycles: float = 1.0,
+        energy_vals: np.ndarray,
+        phase_vals: np.ndarray,
+        phase_energy_map: np.ndarray,
+        title: str,
+        output_path: Path | None = None,
+        show: bool = True,
+        cycles: float = 1.0,
 ):
     """Plot the 2D phase-energy map."""
     # Treat the phase labels as bin centers if they are integer indices.
@@ -111,14 +111,14 @@ def plot_phase_energy_map(
 
 
 def plot_bolometric_light_curve(
-    phase_vals: np.ndarray,
-    phase_energy_map: np.ndarray,
-    title: str,
-    output_path: Path | None = None,
-    show: bool = True,
-    overlay_curves: list[tuple[str, np.ndarray, dict]] | None = None,
-    cycles: float = 1.0,
-    y_max: float | None = None,
+        phase_vals: np.ndarray,
+        phase_energy_map: np.ndarray,
+        title: str,
+        output_path: Path | None = None,
+        show: bool = True,
+        overlay_curves: list[tuple[str, np.ndarray, dict]] | None = None,
+        cycles: float = 1.0,
+        y_max: float | None = None,
 ):
     """Plot the bolometric light curve by summing over energy bins.
 
@@ -265,8 +265,9 @@ def plot_energy_spectrum(
                         f"incompatible with energy length {len(energy_vals)}"
                     )
             print(
-                f"DEBUG: overlay '{label}' -> min={curve.min():.3g}, "
-                f"max={curve.max():.3g}, total={curve.sum():.3g}"
+                f"DEBUG: overlay '{label}' -> "
+                f"min={curve.min():.3g}, max={curve.max():.3g}, "
+                f"total={curve.sum():.3g}"
             )
             kwargs = {"drawstyle": "steps-mid"}
             kwargs.update(style_kwargs or {})
@@ -279,7 +280,9 @@ def plot_energy_spectrum(
     ax.set_xlim(np.min(energy_vals), np.max(energy_vals))
     if log_y:
         # Lower bound considers every curve we drew, not just the primary.
-        positives = np.concatenate([c[c > 0] for c in all_curves if np.any(c > 0)])
+        positives = np.concatenate(
+            [c[c > 0] for c in all_curves if np.any(c > 0)]
+        ) if any(np.any(c > 0) for c in all_curves) else np.array([])
         if positives.size:
             ax.set_yscale("log")
             ax.set_ylim(bottom=max(positives.min() * 0.5, 1e-12))
@@ -295,18 +298,19 @@ def plot_energy_spectrum(
     else:
         plt.close(fig)
 
+
 def plot_phase_energy_and_bolometric(
-    energy_vals: np.ndarray,
-    phase_vals: np.ndarray,
-    phase_energy_map: np.ndarray,
-    title_prefix: str,
-    output_dir: Path,
-    stem: str,
-    show: bool,
-    overlay_curves: list[tuple[str, np.ndarray, dict]] | None = None,
-    overlay_stem_suffix: str | None = None,
-    cycles: float = 2.0,
-    y_max: float = 20000.0,
+        energy_vals: np.ndarray,
+        phase_vals: np.ndarray,
+        phase_energy_map: np.ndarray,
+        title_prefix: str,
+        output_dir: Path,
+        stem: str,
+        show: bool,
+        overlay_curves: list[tuple[str, np.ndarray, dict]] | None = None,
+        overlay_stem_suffix: str | None = None,
+        cycles: float = 2.0,
+        y_max: float = 20000.0,
 ):
     """Save the phase-energy map and bolometric light curve for one data column."""
     map_path = output_dir / f"{stem}_phase_energy_map.png"
@@ -347,13 +351,13 @@ def fractional_circular_shift(values: np.ndarray, shift_bins: float, axis: int =
 
 
 def plot_nas_spot_phase_energy_map(
-    nas_dir: Path,
-    spot_names: tuple[str, ...] = ("spot1", "spot2"),
-    model_file: Path | None = None,
-    output_path: Path | None = None,
-    show: bool = True,
-    cycles: float = 1.0,
-    phase_shift_bins: float = 21.25,
+        nas_dir: Path,
+        spot_names: tuple[str, ...] = ("spot1", "spot2"),
+        model_file: Path | None = None,
+        output_path: Path | None = None,
+        show: bool = True,
+        cycles: float = 1.0,
+        phase_shift_bins: float = 21.25,
 ):
     """Plot the 2D energy-phase map summed directly from the NAS ``_test_data_counts.dat``
     files alongside Miller's NS-surface model from ``j0030_phase_channel_model.txt``.
@@ -516,8 +520,7 @@ def parse_args():
         description="Plot the J0030 phase-channel model as a 2D map and bolometric curve."
     )
     parser.add_argument(
-        "--input",
-        type=Path,
+        "--input",type=Path,
         default=DEFAULT_DATA_FILE,
         help=f"Input phase-channel model file (default: {DEFAULT_DATA_FILE})",
     )
@@ -616,8 +619,22 @@ def main():
     observed_bolometric = observed_phase_energy_map.sum(axis=0)
     background_bolometric = background_phase_energy_map.sum(axis=0)
     # Subtract background from observed counts
-    observed_bolometric = observed_bolometric #- background_bolometric
-    print(f"DEBUG: observed_bolometric (after bg subtraction) shape={observed_bolometric.shape}, min={observed_bolometric.min():.2f}, max={observed_bolometric.max():.2f}")
+    observed_bolometric = observed_bolometric  # - background_bolometric
+    print(
+        f"DEBUG: observed_bolometric (after bg subtraction) shape={observed_bolometric.shape}, "
+        f"min={observed_bolometric.min():.2f}, max={observed_bolometric.max():.2f}"
+    )
+
+    # Load Miller's NS-surface model (column 4) once for use as an overlay.
+    miller_energy_vals, miller_phase_vals, miller_phase_energy_map = infer_phase_energy_map(
+        data, value_column=4
+    )
+    miller_bolometric = miller_phase_energy_map.sum(axis=0)
+    print(
+        f"DEBUG: miller_bolometric shape={miller_bolometric.shape}, "
+        f"min={miller_bolometric.min():.2f}, max={miller_bolometric.max():.2f}, "
+        f"total={miller_bolometric.sum():.2f}"
+    )
 
     for value_column in args.value_columns:
         print(f"Processing column {value_column} with cycles={args.cycles} y_max={args.y_max}")
@@ -657,17 +674,13 @@ def main():
 
             add_factor = 0
             multiply_factor = 1.0  # <-- your factor here
-            nas_total = (nas_curves["spot1"] + nas_curves["spot2"]) * multiply_factor + add_factor #+ nas_curves["spot3"]
+            nas_total = (nas_curves["spot1"] + nas_curves["spot2"]) * multiply_factor + add_factor
 
             overlay_curves = [
-                # ("Observed counts", observed_bolometric, {"color": "green", "lw": 2.0}),
-                ("Our model", nas_total, {"color": "tab:orange", "lw": 2.0}),
-                ("spot 1", nas_curves["spot1"], {"color": "tab:cyan", "lw": 1.0, "ls": "--"}),
-                ("spot 2", nas_curves["spot2"], {"color": "tab:red", "lw": 1.0, "ls": "--"}),
-                ("spot 3", nas_curves["spot3"], {"color": "tab:purple", "lw": 1.0, "ls": "--"}),
+                ("Our model",      nas_total,         {"color": "tab:orange", "lw": 2.0}),
+                ("Miller's model", miller_bolometric, {"color": "tab:blue",   "lw": 2.0, "ls": "-"}),
             ]
             print(f"DEBUG: overlay_curves has {len(overlay_curves)} curves")
-            print(f"DEBUG: observed curve shape={(observed_bolometric + 10000).shape}, min={(observed_bolometric + 10000).min():.2f}, max={(observed_bolometric + 10000).max():.2f}")
             overlay_suffix = "with_nas_spots"
 
         plot_phase_energy_and_bolometric(
@@ -731,22 +744,6 @@ def main():
             ],
             log_y=True,
         )
-
-        # plot_energy_spectrum(
-        #     energy_vals=observed_energy_vals,
-        #     phase_energy_map=observed_phase_energy_map,
-        #     title="J0030 Energy Spectrum (summed over phase bins)",
-        #     output_path=output_dir / "j0030_energy_spectrum.png",
-        #     show=not args.no_show,
-        #     primary_label="observed counts",
-        #     primary_style={"color": "black", "lw": 1.5},
-        #     overlay_spectra=[
-        #         ("best-fit model",      model_phase_energy_map,      {"color": "tab:orange", "lw": 2.0}),
-        #         ("NS-surface only",     nssurf_phase_energy_map,     {"color": "tab:cyan",   "lw": 1.5, "ls": "--"}),
-        #         ("background",          background_phase_energy_map, {"color": "tab:gray",   "lw": 1.0, "ls": ":"}),
-        #     ],
-        #     log_y=True,
-        # )
 
 
 if __name__ == "__main__":
